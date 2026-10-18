@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.14"
 dependencies = [
+    "dotenv>=0.9.9",
     "fastapi[standard]>=0.143.5",
     "google-genai>=2.31.0",
     "httpx>=0.28.1",

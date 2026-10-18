@@ -1,33 +1,50 @@
 from dotenv import load_dotenv
-# MUST run before importing scanner / agent_harness so GEMINI_API_KEY is in os.environ
+# MUST run before importing scanner / agent_harness so env vars are loaded
 load_dotenv()
 
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException
+from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from sqlmodel import Session, select
 from database import init_db, get_session, Scan
 from scanner import execute_scan_task
+from asvs_loader import get_all_chapters, get_test_suite
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     yield
 
-app = FastAPI(title="Gemini + TinyFish Security Auditor", lifespan=lifespan)
+app = FastAPI(title="OWASP ASVS Web Security Verification Harness", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 class ScanRequest(BaseModel):
     url: HttpUrl
-    focus_prompt: Optional[str] = "Perform a full passive web vulnerability audit."
+    suite: Optional[str] = "chapter_sample"  # "chapter_sample" (1 test/chapter) | "first_five" | "full"
+    focus_prompt: Optional[str] = None
+
+@app.get("/asvs/chapters")
+def list_asvs_chapters():
+    """Returns all 17 OWASP ASVS chapters with section counts."""
+    return {"chapters": get_all_chapters()}
+
+@app.get("/asvs/tests")
+def get_asvs_tests(suite: str = Query("chapter_sample", description="Test suite type")):
+    """Returns the tests that will be run for the given suite type."""
+    tests = get_test_suite(suite)
+    return {
+        "suite": suite,
+        "count": len(tests),
+        "tests": tests
+    }
 
 @app.post("/scans", response_model=Scan)
 async def start_scan(
@@ -35,11 +52,12 @@ async def start_scan(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_session),
 ):
-    # Initialize results with an empty agent_trace so the Next.js UI never hits null errors
+    suite_type = payload.suite or "chapter_sample"
+    # Initialize results with empty traces and findings
     scan = Scan(
         url=str(payload.url),
-        status="running",
-        results={"agent_trace": [], "findings": []}
+        status="queued",
+        results={"agent_trace": [], "findings": [], "asvs_results": []}
     )
     db.add(scan)
     db.commit()
@@ -49,7 +67,7 @@ async def start_scan(
         execute_scan_task,
         scan.id,
         scan.url,
-        payload.focus_prompt
+        suite_type
     )
     return scan
 
