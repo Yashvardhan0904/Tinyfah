@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
+from sqlalchemy import event
 from sqlmodel import SQLModel, Field, create_engine, Session, Column, JSON
 
 class Scan(SQLModel, table=True):
@@ -13,8 +14,17 @@ class Scan(SQLModel, table=True):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 sqlite_url = "sqlite:///./scans.db"
-# check_same_thread=False is required so BackgroundTasks can write to SQLite
-engine = create_engine(sqlite_url, connect_args={"check_same_thread": False})
+engine = create_engine(
+    sqlite_url,
+    connect_args={"check_same_thread": False, "timeout": 15}
+)
+
+# Enable WAL mode so Next.js polling reads never block background agent writes
+@event.listens_for(engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+    cursor = dbapi_connection.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL;")
+    cursor.close()
 
 def init_db():
     SQLModel.metadata.create_all(engine)

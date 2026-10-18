@@ -1,23 +1,42 @@
 import os
 import httpx
+from dotenv import load_dotenv
 from sqlmodel import Session
+from sqlalchemy.orm.attributes import flag_modified
 from playwright.async_api import async_playwright
 from database import engine, Scan
-from checks import DOM_AUDIT_JS, score_scan
+from agent_harness import run_gemini_security_harness
+
+load_dotenv()
 
 TINYFISH_URL = "https://api.browser.tinyfish.ai"
 TINYFISH_API_KEY = os.getenv("TINYFISH_API_KEY", "")
 
-async def execute_scan_task(scan_id: int, target_url: str):
+def save_live_trace(scan_id: int, trace: list):
+    """Writes intermediate Gemini tool steps to SQLite so Next.js polling shows live progress."""
+    with Session(engine) as db:
+        scan = db.get(Scan, scan_id)
+        if scan:
+            scan.results = {"agent_trace": list(trace), "findings": []}
+            flag_modified(scan, "results")
+            db.add(scan)
+            db.commit()
+
+# FIXED: Added focus_prompt as the 3rd argument with a default value
+async def execute_scan_task(
+    scan_id: int, 
+    target_url: str, 
+    focus_prompt: str = "Perform a full passive web vulnerability audit."
+):
     headers = {"X-API-Key": TINYFISH_API_KEY, "Content-Type": "application/json"}
     session_id = None
     cdp_issues = []
     doc_headers = {}
 
     try:
-        async with httpx.AsyncClient(timeout=65.0) as client:
-            # 1. Create remote TinyFish browser session
-            resp = await client.post(TINYFISH_URL, headers=headers, json={"url": target_url})
+        async with httpx.AsyncClient(timeout=65.0) as http_client:
+            # 1. Start isolated TinyFish browser session
+            resp = await http_client.post(TINYFISH_URL, headers=headers, json={"url": target_url})
             resp.raise_for_status()
             session_data = resp.json()
             session_id = session_data["session_id"]
@@ -30,7 +49,6 @@ async def execute_scan_task(scan_id: int, target_url: str):
                 page = context.pages[0]
                 cdp = await context.new_cdp_session(page)
 
-                # Enable native Chrome DevTools Security/Audit/Network listeners
                 await cdp.send("Audits.enable")
                 await cdp.send("Network.enable")
                 cdp.on("Audits.issueAdded", lambda e: cdp_issues.append(e["issue"]["code"]))
@@ -41,43 +59,43 @@ async def execute_scan_task(scan_id: int, target_url: str):
 
                 cdp.on("Network.responseReceived", capture_headers)
 
-                # Reload once so listeners catch initial Document headers & issues
                 await page.reload(wait_until="domcontentloaded")
                 await page.wait_for_timeout(1500)
 
-                # Collect cookies & execute DOM audit script
-                cookie_resp = await cdp.send("Network.getAllCookies")
-                cookies = cookie_resp.get("cookies", [])
-                dom_data = await page.evaluate(DOM_AUDIT_JS)
+                # 3. Run the Gemini 2.5 Flash ReAct Harness (passing focus_prompt)
+                report = await run_gemini_security_harness(
+                    page=page,
+                    cdp=cdp,
+                    doc_headers=doc_headers,
+                    cdp_issues=cdp_issues,
+                    focus_prompt=focus_prompt,
+                    on_step_callback=lambda trace: save_live_trace(scan_id, trace),
+                )
 
                 await browser.close()
 
-        # 3. Grade findings and save to SQLite
-        graded = score_scan(doc_headers, cookies, dom_data, cdp_issues)
+        # 4. Save final scored report to SQLite
         with Session(engine) as db:
             scan = db.get(Scan, scan_id)
             scan.status = "completed"
-            scan.score = graded["score"]
-            scan.grade = graded["grade"]
-            scan.results = {
-                "findings": graded["findings"],
-                "dom_audit": dom_data,
-                "devtools_issues": list(set(cdp_issues)),
-                "raw_headers": doc_headers,
-            }
+            scan.score = report["score"]
+            scan.grade = report["grade"]
+            scan.results = report
+            flag_modified(scan, "results")
             db.add(scan)
             db.commit()
 
     except Exception as exc:
         with Session(engine) as db:
             scan = db.get(Scan, scan_id)
-            scan.status = "failed"
-            scan.error = str(exc)
-            db.add(scan)
-            db.commit()
+            if scan:
+                scan.status = "failed"
+                scan.error = str(exc)
+                db.add(scan)
+                db.commit()
 
     finally:
-        # 4. Always tear down TinyFish session to save credits
+        # 5. Always close TinyFish session on exit
         if session_id:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                await client.delete(f"{TINYFISH_URL}/{session_id}", headers=headers)
+            async with httpx.AsyncClient(timeout=15.0) as http_client:
+                await http_client.delete(f"{TINYFISH_URL}/{session_id}", headers=headers)

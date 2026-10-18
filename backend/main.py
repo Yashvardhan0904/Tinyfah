@@ -1,3 +1,8 @@
+from dotenv import load_dotenv
+# MUST run before importing scanner / agent_harness so GEMINI_API_KEY is in os.environ
+load_dotenv()
+
+from typing import Optional
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,9 +16,8 @@ async def lifespan(app: FastAPI):
     init_db()
     yield
 
-app = FastAPI(title="Hackathon Vulnerability Scanner", lifespan=lifespan)
+app = FastAPI(title="Gemini + TinyFish Security Auditor", lifespan=lifespan)
 
-# Allow Next.js local dev server
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],
@@ -23,6 +27,7 @@ app.add_middleware(
 
 class ScanRequest(BaseModel):
     url: HttpUrl
+    focus_prompt: Optional[str] = "Perform a full passive web vulnerability audit."
 
 @app.post("/scans", response_model=Scan)
 async def start_scan(
@@ -30,13 +35,22 @@ async def start_scan(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_session),
 ):
-    scan = Scan(url=str(payload.url), status="running")
+    # Initialize results with an empty agent_trace so the Next.js UI never hits null errors
+    scan = Scan(
+        url=str(payload.url),
+        status="running",
+        results={"agent_trace": [], "findings": []}
+    )
     db.add(scan)
     db.commit()
     db.refresh(scan)
 
-    # Runs asynchronously in the same process after returning HTTP 200
-    background_tasks.add_task(execute_scan_task, scan.id, scan.url)
+    background_tasks.add_task(
+        execute_scan_task,
+        scan.id,
+        scan.url,
+        payload.focus_prompt
+    )
     return scan
 
 @app.get("/scans/{scan_id}", response_model=Scan)
