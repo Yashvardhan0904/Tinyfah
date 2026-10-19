@@ -38,6 +38,8 @@ async def test_deterministic_v1():
         v1_2_1_result = secure_report["asvs_results"][0]
         print(f"V1.2.1 Status on /secure: {v1_2_1_result['status']} (Expected: PASS)")
         assert v1_2_1_result["status"] == "PASS", f"Expected PASS on secure, got {v1_2_1_result['status']}"
+        assert v1_2_1_result.get("screenshot") and v1_2_1_result["screenshot"].startswith("data:image/"), "Expected screenshot on v1_2_1_result"
+        print("V1.2.1 Screenshot captured successfully via CDP session.")
 
         # Test 2: Single test V1.2.1 against Vulnerable endpoint
         print("\n--- Test 2: V1.2.1 against Vulnerable Endpoint ---")
@@ -50,6 +52,8 @@ async def test_deterministic_v1():
         print(f"V1.2.1 Status on /vulnerable: {v1_2_1_vuln['status']} (Expected: FAIL)")
         print(f"Evidence: {v1_2_1_vuln['evidence']}")
         assert v1_2_1_vuln["status"] == "FAIL", f"Expected FAIL on vulnerable, got {v1_2_1_vuln['status']}"
+        assert v1_2_1_vuln.get("screenshot") and v1_2_1_vuln["screenshot"].startswith("data:image/"), "Expected screenshot on v1_2_1_vuln"
+        print("V1.2.1 Failure screenshot captured successfully.")
 
         # Test 3: Full Chapter V1 Suite against Vulnerable endpoint
         print("\n--- Test 3: Full Chapter V1 Suite (all 30 requirements) against Vulnerable Endpoint ---")
@@ -72,6 +76,9 @@ async def test_deterministic_v1():
         assert full_vuln_report['coverage_percentage'] == 10.0
         assert full_vuln_report['score'] == 25
         assert full_vuln_report['grade'] == 'F'
+
+        assert any(f.get("screenshot") and f["screenshot"].startswith("data:image/") for f in full_vuln_report["findings"]), "Expected findings to contain screenshots"
+        print(f"Findings contain screenshots: {[f.get('title') for f in full_vuln_report['findings'] if f.get('screenshot')]}")
 
         print("\n=== ALL DETERMINISTIC HARNESS TESTS PASSED SUCCESSFULLY ===")
 

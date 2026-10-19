@@ -36,44 +36,101 @@ DOM_AUDIT_JS = """
 
 REQUIRED_HEADERS = {
     "strict-transport-security": {"weight": 20, "label": "Missing HSTS Header", "asvs": "V3.4.1"},
-    "content-security-policy": {"weight": 25, "label": "Missing Content-Security-Policy (CSP)", "asvs": "V3.1.1"},
-    "x-frame-options": {"weight": 15, "label": "Missing X-Frame-Options (Clickjacking defense)", "asvs": "V3.1.1"},
-    "x-content-type-options": {"weight": 10, "label": "Missing X-Content-Type-Options (nosniff)", "asvs": "V13.1.1"},
-    "referrer-policy": {"weight": 10, "label": "Missing Referrer-Policy", "asvs": "V3.1.1"},
+    "content-security-policy": {"weight": 25, "label": "Missing Content-Security-Policy (CSP)", "asvs": "V3.4.2"},
+    "x-frame-options": {"weight": 15, "label": "Missing X-Frame-Options (Clickjacking defense)", "asvs": "V3.4.3"},
+    "x-content-type-options": {"weight": 10, "label": "Missing X-Content-Type-Options (nosniff)", "asvs": "V4.1.1"},
+    "referrer-policy": {"weight": 10, "label": "Missing Referrer-Policy", "asvs": "V3.4.5"},
 }
+
+SEVERITY_ORDER = {"high": 3, "medium": 2, "low": 1, "info": 0}
+
+def _canonical_finding_key(f: Dict[str, Any]) -> tuple:
+    f_type = (f.get("type") or f.get("category") or "").strip().lower()
+    detail = (f.get("detail") or f.get("title") or "").strip().lower()
+    asvs = str(f.get("asvs") or f.get("requirement_id") or "").strip().upper()
+    combined = f"{f_type} {detail} {asvs}".lower()
+
+    if "strict-transport-security" in combined or "hsts" in combined or asvs == "V3.4.1":
+        return ("header", "hsts")
+    if "content-security-policy" in combined or "csp" in combined or asvs == "V3.4.2":
+        return ("header", "csp")
+    if "x-frame-options" in combined or "xfo" in combined or "clickjacking" in combined or asvs == "V3.4.3":
+        return ("header", "xfo")
+    if "x-content-type-options" in combined or "nosniff" in combined or asvs == "V4.1.1":
+        return ("header", "xcto")
+    if "referrer-policy" in combined or asvs == "V3.4.5":
+        return ("header", "referrer")
+    if f_type == "form" or "insecure form" in combined:
+        return ("form", "insecure_transport")
+    return (f_type, detail)
 
 def deduplicate_findings(findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     Deduplicates identical findings while preserving all evidence and valid ASVS mappings.
     """
     deduped: Dict[tuple, Dict[str, Any]] = {}
-    for f in findings:
-        category = f.get("type") or f.get("category") or "general"
-        title = f.get("detail") or f.get("title") or "Finding"
-        key = (category.lower().strip(), title.lower().strip())
 
-        asvs_val = f.get("asvs") or f.get("requirement_id")
-        evidence_val = f.get("evidence") or f.get("detail") or ""
+    for f in findings:
+        key = _canonical_finding_key(f)
+
+        # Collect requirement IDs
+        ids_to_add = []
+        if isinstance(f.get("requirement_ids"), list):
+            ids_to_add.extend([str(x).strip() for x in f["requirement_ids"] if x])
+        if f.get("asvs"):
+            ids_to_add.append(str(f["asvs"]).strip())
+        if f.get("requirement_id"):
+            for part in str(f["requirement_id"]).split(","):
+                part_clean = part.strip()
+                if part_clean and part_clean not in ids_to_add:
+                    ids_to_add.append(part_clean)
+
+        raw_ev = f.get("evidence") or f.get("detail") or ""
+        evidence_parts = [e.strip() for e in str(raw_ev).split(" | ") if e.strip()]
 
         if key not in deduped:
             entry = dict(f)
-            entry["requirement_ids"] = [asvs_val] if asvs_val else []
-            entry["evidence_list"] = [evidence_val] if evidence_val else []
-            if asvs_val and "requirement_id" not in entry:
-                entry["requirement_id"] = asvs_val
+            seen_ids = set()
+            unique_ids = []
+            for rid in ids_to_add:
+                if rid and rid not in seen_ids:
+                    seen_ids.add(rid)
+                    unique_ids.append(rid)
+            entry["requirement_ids"] = unique_ids
+            entry["asvs"] = unique_ids[0] if unique_ids else entry.get("asvs", "")
+            entry["requirement_id"] = ", ".join(unique_ids) if unique_ids else entry.get("requirement_id", "")
+            entry["evidence_parts"] = evidence_parts
+            entry["evidence"] = " | ".join(evidence_parts) if evidence_parts else ""
             deduped[key] = entry
         else:
-            if asvs_val and asvs_val not in deduped[key]["requirement_ids"]:
-                deduped[key]["requirement_ids"].append(asvs_val)
-                # Keep requirement_id updated with combined IDs if multiple
-                deduped[key]["requirement_id"] = ", ".join(deduped[key]["requirement_ids"])
-            if evidence_val and evidence_val not in deduped[key]["evidence_list"]:
-                deduped[key]["evidence_list"].append(evidence_val)
-                deduped[key]["evidence"] = " | ".join(deduped[key]["evidence_list"])
+            entry = deduped[key]
+            # Merge IDs
+            for rid in ids_to_add:
+                if rid and rid not in entry["requirement_ids"]:
+                    entry["requirement_ids"].append(rid)
+            entry["requirement_id"] = ", ".join(entry["requirement_ids"])
+            if not entry.get("asvs") and entry["requirement_ids"]:
+                entry["asvs"] = entry["requirement_ids"][0]
 
-    # Clean up internal evidence_list before returning
+            # Merge evidence
+            for ep in evidence_parts:
+                if ep and ep not in entry["evidence_parts"]:
+                    entry["evidence_parts"].append(ep)
+            entry["evidence"] = " | ".join(entry["evidence_parts"])
+
+            # Merge severity (preserve highest)
+            cur_sev = str(entry.get("severity", "info")).lower()
+            new_sev = str(f.get("severity", "info")).lower()
+            if SEVERITY_ORDER.get(new_sev, 0) > SEVERITY_ORDER.get(cur_sev, 0):
+                entry["severity"] = f.get("severity", new_sev)
+
+            # Preserve screenshot if existing entry doesn't have one
+            if not entry.get("screenshot") and f.get("screenshot"):
+                entry["screenshot"] = f.get("screenshot")
+
     result = []
     for entry in deduped.values():
+        entry.pop("evidence_parts", None)
         entry.pop("evidence_list", None)
         result.append(entry)
     return result
@@ -85,6 +142,7 @@ def evaluate_asvs_requirements(
     dom_data: dict,
     cdp_issues: list,
     protocol: str = "https:",
+    screenshot: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Evaluates a set of ASVS requirements against live CDP, header, cookie, and DOM evidence.
@@ -103,10 +161,14 @@ def evaluate_asvs_requirements(
         return {
             "score": None,
             "grade": "NOT_ASSESSED",
+            "scan_status": "not_assessed",
             "coverage_percentage": 0.0,
+            "pass_rate_percentage": None,
+            "screenshot": screenshot,
             "asvs_results": [],
             "findings": [],
             "metrics": {
+                "total_requirements": 0,
                 "total_evaluated": 0,
                 "passed": 0,
                 "failed": 0,
@@ -186,13 +248,15 @@ def evaluate_asvs_requirements(
                     failed_count += 1
                     severity = "medium"
                     score -= 15
-                    evidence = "Page served over HTTPS but Strict-Transport-Security (HSTS) header is missing."
+                    evidence = f"Strict-Transport-Security (HSTS) header is missing from HTTP response. Observed header keys: {sorted(list(lower_headers.keys()))}"
                     remediation = "Add 'Strict-Transport-Security: max-age=31536000; includeSubDomains' to enforce TLS."
                     raw_findings.append({
                         "type": "header",
                         "severity": "medium",
                         "detail": "Missing HSTS Header (Strict-Transport-Security)",
                         "asvs": req_id or "V3.4.1",
+                        "requirement_id": req_id or "V3.4.1",
+                        "requirement_ids": [req_id or "V3.4.1"],
                         "evidence": evidence,
                     })
             else:
@@ -206,19 +270,21 @@ def evaluate_asvs_requirements(
             if protocol == "https:":
                 status = "PASS"
                 passed_count += 1
-                evidence = f"Connection established over HTTPS (TLS encryption active, protocol: {protocol})."
+                evidence = f"TLS encryption active on primary HTTPS connection (protocol='{protocol}')."
             else:
                 status = "FAIL"
                 failed_count += 1
                 severity = "high"
                 score -= 25
-                evidence = f"Page served over unencrypted protocol ({protocol}); TLS transport encryption is not enabled."
+                evidence = f"Insecure HTTP connection ({protocol}); TLS transport encryption is not enabled."
                 remediation = "Enforce HTTPS redirect and enable modern TLS (TLS 1.2+)."
                 raw_findings.append({
                     "type": "tls",
                     "severity": "high",
                     "detail": "Insecure HTTP connection (Missing TLS)",
-                    "asvs": req_id or "V12.2.1",
+                    "asvs": req_id or "V12.1.1",
+                    "requirement_id": req_id or "V12.1.1",
+                    "requirement_ids": [req_id or "V12.1.1"],
                     "evidence": evidence,
                 })
 
@@ -321,7 +387,7 @@ def evaluate_asvs_requirements(
             evidence = f"Standard requirement '{req_id}' requires manual architecture or source code review."
             remediation = f"Review organization policy and codebase implementation for: {desc}"
 
-        asvs_results.append({
+        asvs_item = {
             "requirement_id": req_id,
             "chapter_code": chap_code,
             "chapter_name": chap_name,
@@ -331,7 +397,10 @@ def evaluate_asvs_requirements(
             "severity": severity,
             "evidence": evidence,
             "remediation": remediation,
-        })
+        }
+        if screenshot:
+            asvs_item["screenshot"] = screenshot
+        asvs_results.append(asvs_item)
 
     # Check for insecure forms submitting over HTTP (map to V12.2.1, NOT V1)
     if insecure_forms:
@@ -340,21 +409,32 @@ def evaluate_asvs_requirements(
             "severity": "high",
             "detail": "Form submitting over unencrypted HTTP",
             "asvs": "V12.2.1",
+            "requirement_id": "V12.2.1",
+            "requirement_ids": ["V12.2.1"],
             "evidence": f"Insecure form actions detected: {', '.join(insecure_forms[:3])}",
         })
         score -= 20
+
+    # Attach screenshot to raw findings if provided
+    if screenshot:
+        for rf in raw_findings:
+            if not rf.get("screenshot"):
+                rf["screenshot"] = screenshot
 
     # Deduplicate findings while preserving all evidence and ASVS mappings
     findings = deduplicate_findings(raw_findings)
 
     total_evaluated = passed_count + failed_count
     coverage_pct = round((total_evaluated / len(requirements) * 100), 1) if requirements else 0.0
+    pass_rate_pct = round((passed_count / total_evaluated * 100), 1) if total_evaluated > 0 else None
 
     # If no requirements could be definitively evaluated, score is None, grade is NOT_ASSESSED
     if total_evaluated == 0:
         final_score = None
         grade = "NOT_ASSESSED"
+        scan_status = "not_assessed"
     else:
+        scan_status = "completed"
         final_score = max(0, min(100, score))
         if final_score >= 90:
             grade = "A"
@@ -370,7 +450,10 @@ def evaluate_asvs_requirements(
     return {
         "score": final_score,
         "grade": grade,
+        "scan_status": scan_status,
         "coverage_percentage": coverage_pct,
+        "pass_rate_percentage": pass_rate_pct,
+        "screenshot": screenshot,
         "asvs_results": asvs_results,
         "findings": findings,
         "metrics": {

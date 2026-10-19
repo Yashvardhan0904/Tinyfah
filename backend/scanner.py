@@ -128,9 +128,16 @@ async def execute_scan_task(
             with Session(engine) as db:
                 scan = db.get(Scan, scan_id)
                 if scan:
-                    scan.status = report.get("scan_status", "completed")
-                    scan.score = report.get("score")
-                    scan.grade = report.get("grade", "NOT_ASSESSED")
+                    asvs_results = report.get("asvs_results", [])
+                    evaluated = [r for r in asvs_results if isinstance(r, dict) and r.get("status") in ["PASS", "FAIL"]]
+                    if len(evaluated) == 0:
+                        scan.status = "not_assessed"
+                        scan.score = None
+                        scan.grade = "NOT_ASSESSED"
+                    else:
+                        scan.status = report.get("scan_status", "completed")
+                        scan.score = report.get("score")
+                        scan.grade = report.get("grade", "NOT_ASSESSED")
                     scan.results = report
                     flag_modified(scan, "results")
                     db.add(scan)
@@ -175,6 +182,7 @@ async def execute_scan_task(
                     page = context.pages[0]
                     cdp = await context.new_cdp_session(page)
 
+                    await cdp.send("Page.enable")
                     await cdp.send("Audits.enable")
                     await cdp.send("Network.enable")
                     cdp.on("Audits.issueAdded", lambda e: cdp_issues.append(e["issue"]["code"]))
@@ -204,9 +212,20 @@ async def execute_scan_task(
             with Session(engine) as db:
                 scan = db.get(Scan, scan_id)
                 if scan:
-                    scan.status = report.get("scan_status", "completed")
-                    scan.score = report.get("score")
-                    scan.grade = report.get("grade", "NOT_ASSESSED")
+                    asvs_results = report.get("asvs_results", [])
+                    evaluated = [
+                        r for r in asvs_results
+                        if (isinstance(r, dict) and r.get("status") in ["PASS", "FAIL"])
+                        or (hasattr(r, "status") and getattr(r, "status") in ["PASS", "FAIL"])
+                    ]
+                    if len(evaluated) == 0:
+                        scan.status = "not_assessed"
+                        scan.score = None
+                        scan.grade = "NOT_ASSESSED"
+                    else:
+                        scan.status = report.get("scan_status", "completed")
+                        scan.score = report.get("score")
+                        scan.grade = report.get("grade", "NOT_ASSESSED")
                     scan.results = report
                     flag_modified(scan, "results")
                     db.add(scan)

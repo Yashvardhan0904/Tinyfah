@@ -10,6 +10,30 @@ class HarnessContext:
     doc_headers: Dict[str, str] = field(default_factory=dict)
     cdp_issues: List[str] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
+    http_status: Optional[int] = None
+
+    async def capture_screenshot(self, format: str = "png") -> Optional[str]:
+        """
+        Captures a screenshot of the current page state using CDP Page.captureScreenshot.
+        Returns base64 data URI (data:image/png;base64,...), falling back to Playwright if needed.
+        """
+        if self.cdp:
+            try:
+                await self.cdp.send("Page.enable")
+                res = await self.cdp.send("Page.captureScreenshot", {"format": format})
+                if res and "data" in res:
+                    return f"data:image/{format};base64,{res['data']}"
+            except Exception:
+                pass
+        if self.page:
+            try:
+                import base64
+                img_bytes = await self.page.screenshot(type=format)
+                b64_str = base64.b64encode(img_bytes).decode("utf-8")
+                return f"data:image/{format};base64,{b64_str}"
+            except Exception:
+                pass
+        return None
 
 @dataclass
 class TestResult:
@@ -31,6 +55,7 @@ class TestResult:
     expected_behavior: str = ""
     limitations: str = ""
     execution_error: Optional[str] = None
+    screenshot: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -54,6 +79,7 @@ class TestResult:
             "expected_behavior": self.expected_behavior,
             "limitations": self.limitations,
             "execution_error": self.execution_error,
+            "screenshot": self.screenshot,
         }
 
 TestFunction = Callable[[HarnessContext], Awaitable[TestResult]]

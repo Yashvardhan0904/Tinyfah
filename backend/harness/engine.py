@@ -104,6 +104,7 @@ class HarnessEngine:
                     cdp_session = None
                     try:
                         cdp_session = await context.new_cdp_session(page)
+                        await cdp_session.send("Page.enable")
                         await cdp_session.send("Audits.enable")
                         await cdp_session.send("Network.enable")
 
@@ -121,10 +122,13 @@ class HarnessEngine:
                         pass  # CDP session not critical for all assertions
 
                     # Navigate to target
+                    http_status = None
                     try:
                         resp = await page.goto(target_url, wait_until="domcontentloaded", timeout=15000)
-                        if resp and not doc_headers:
-                            doc_headers.update(resp.headers)
+                        if resp:
+                            http_status = resp.status
+                            if not doc_headers:
+                                doc_headers.update(resp.headers)
                     except Exception:
                         pass
 
@@ -153,6 +157,7 @@ class HarnessEngine:
                             doc_headers=doc_headers,
                             cdp_issues=cdp_issues,
                             metadata=req,
+                            http_status=http_status,
                         )
 
                         trace_entry = {
@@ -176,6 +181,9 @@ class HarnessEngine:
                                 evidence="Test probe timed out after 25s",
                                 remediation="Review server responsiveness.",
                                 chapter="V1 Encoding and Sanitization",
+                                target_url=target_url,
+                                http_status=http_status,
+                                execution_error="asyncio.TimeoutError",
                             )
                         except Exception as e:
                             res = TestResult(
@@ -186,11 +194,26 @@ class HarnessEngine:
                                 evidence=f"Test probe exception: {str(e)}",
                                 remediation="Inspect test script or page interaction.",
                                 chapter="V1 Encoding and Sanitization",
+                                target_url=target_url,
+                                http_status=http_status,
+                                execution_error=str(e),
                             )
+
+                        # Capture screenshot via CDP session after each test for concrete visual evidence
+                        screenshot = await harness_ctx.capture_screenshot()
+                        if screenshot and not res.screenshot:
+                            res.screenshot = screenshot
+
+                        if res.http_status is None:
+                            res.http_status = http_status
+                        if not res.target_url:
+                            res.target_url = target_url
 
                         executed_results[sc] = res
                         trace_entry["status"] = res.status
                         trace_entry["observation_preview"] = res.evidence[:250]
+                        if res.screenshot:
+                            trace_entry["screenshot"] = res.screenshot
                         if on_step_callback:
                             on_step_callback(agent_trace)
 
@@ -204,13 +227,21 @@ class HarnessEngine:
                             target_url=target_url,
                             doc_headers=doc_headers,
                             cdp_issues=cdp_issues,
+                            http_status=http_status,
                         )
+                        landing_screenshot = await harness_ctx.capture_screenshot()
                         passive_results = await v1_scripts.evaluate_v1_passive_and_review_requirements(
                             all_v1_reqs=all_reqs,
                             ctx=harness_ctx,
                             executed_results=executed_results,
                         )
                         for pr in passive_results:
+                            if pr.http_status is None:
+                                pr.http_status = http_status
+                            if not pr.target_url:
+                                pr.target_url = target_url
+                            if not pr.screenshot and landing_screenshot:
+                                pr.screenshot = landing_screenshot
                             executed_results[pr.shortcode] = pr
 
                     # Order results in canonical ASVS order

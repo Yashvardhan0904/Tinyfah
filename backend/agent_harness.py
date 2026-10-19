@@ -16,7 +16,7 @@ load_dotenv()
 # Picks up GEMINI_API_KEY from the environment
 gemini_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=gemini_key) if gemini_key else None
-MODEL_ID = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+MODEL_ID = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 # --- 1. Pydantic Schemas for Structured Output ---
 class ASVSTestItem(BaseModel):
@@ -27,6 +27,7 @@ class ASVSTestItem(BaseModel):
     severity: str     # "high" | "medium" | "low" | "info"
     evidence: str
     remediation: str
+    screenshot: Optional[str] = None
 
 class FindingItem(BaseModel):
     severity: str     # "high" | "medium" | "low"
@@ -34,6 +35,7 @@ class FindingItem(BaseModel):
     title: str
     evidence: str
     remediation: str
+    screenshot: Optional[str] = None
 
 class GeminiSecurityReport(BaseModel):
     score: Optional[int] = None       # 0 - 100, or None if not assessable
@@ -41,6 +43,7 @@ class GeminiSecurityReport(BaseModel):
     summary: str
     asvs_results: List[ASVSTestItem]
     findings: List[FindingItem]
+    screenshot: Optional[str] = None
 
 
 # --- 2. Passive CDP & DOM Diagnostic Tools ---
@@ -114,6 +117,30 @@ async def execute_cdp_tool(name: str, args: dict, page: Page, cdp: CDPSession) -
         })""")
         return mixed_content
 
+    elif name == "capture_page_screenshot":
+        format_choice = args.get("format", "png")
+        if format_choice not in ["png", "jpeg"]:
+            format_choice = "png"
+        try:
+            await cdp.send("Page.enable")
+            send_args = {"format": format_choice}
+            if format_choice == "jpeg":
+                send_args["quality"] = int(args.get("quality", 80))
+            cdp_res = await cdp.send("Page.captureScreenshot", send_args)
+            if cdp_res and "data" in cdp_res:
+                data_url = f"data:image/{format_choice};base64,{cdp_res['data']}"
+                return {"status": "ok", "screenshot": data_url}
+        except Exception:
+            pass
+
+        try:
+            import base64
+            raw_bytes = await page.screenshot(type=format_choice)
+            b64_str = base64.b64encode(raw_bytes).decode("utf-8")
+            return {"status": "ok", "screenshot": f"data:image/{format_choice};base64,{b64_str}"}
+        except Exception as exc:
+            return {"status": "error", "error": f"Failed to capture screenshot: {str(exc)}"}
+
     return {"error": f"Unknown tool: {name}"}
 
 
@@ -168,6 +195,18 @@ SECURITY_TOOLS = types.Tool(
                 required=["reason"],
             ),
         ),
+        types.FunctionDeclaration(
+            name="capture_page_screenshot",
+            description="Captures a visual screenshot of the current page state via Chrome DevTools Protocol (Page.captureScreenshot) to serve as concrete evidence for security findings.",
+            parameters=types.Schema(
+                type="OBJECT",
+                properties={
+                    "reason": types.Schema(type="STRING", description="Why the visual evidence is being captured"),
+                    "format": types.Schema(type="STRING", description="Image format: 'png' or 'jpeg' (default 'png')"),
+                },
+                required=["reason"],
+            ),
+        ),
     ]
 )
 
@@ -184,6 +223,26 @@ async def run_gemini_security_harness(
     if not asvs_requirements:
         from asvs_loader import get_one_test_per_chapter
         asvs_requirements = get_one_test_per_chapter()
+
+    # Enable CDP Page domain
+    try:
+        await cdp.send("Page.enable")
+    except Exception:
+        pass
+
+    # Baseline screenshot via CDP session
+    baseline_screenshot = None
+    try:
+        shot_res = await cdp.send("Page.captureScreenshot", {"format": "png"})
+        if shot_res and "data" in shot_res:
+            baseline_screenshot = f"data:image/png;base64,{shot_res['data']}"
+    except Exception:
+        try:
+            import base64
+            raw_bytes = await page.screenshot(type="png")
+            baseline_screenshot = f"data:image/png;base64,{base64.b64encode(raw_bytes).decode('utf-8')}"
+        except Exception:
+            pass
 
     # Step 0: Lightweight initial reconnaissance
     initial_recon = await page.evaluate("""() => ({
@@ -214,6 +273,7 @@ async def run_gemini_security_harness(
         dom_data=dom_data,
         cdp_issues=cdp_issues,
         protocol=initial_recon.get("protocol", "https:"),
+        screenshot=baseline_screenshot,
     )
 
     system_instruction = (
@@ -255,17 +315,19 @@ async def run_gemini_security_harness(
                 config=types.GenerateContentConfig(
                     system_instruction=system_instruction,
                     tools=[SECURITY_TOOLS],
-                    temperature=0.1,
                 ),
             )
         except Exception as exc:
             trace_entry = {
-                "step": step + 1,
-                "tool": "gemini_model_fallback",
-                "reason": f"Model invocation fallback: {str(exc)}",
-                "observation_preview": "Using baseline evaluation results",
+                "step": len(agent_trace) + 1,
+                "tool": "deterministic_baseline_fallback",
+                "status": "fallback",
+                "reason": "AI model invocation failed; executing deterministic ASVS evaluator.",
+                "observation_preview": f"AI error: {str(exc)[:180]}",
             }
             agent_trace.append(trace_entry)
+            if on_step_callback:
+                on_step_callback(agent_trace)
             break
 
         contents.append(response.candidates[0].content)
@@ -286,16 +348,20 @@ async def run_gemini_security_harness(
                 "reason": fn_args.get("reason", "Auditing ASVS requirement"),
                 "observation_preview": json.dumps(tool_output)[:300],
             }
+            if tool_output.get("screenshot"):
+                trace_entry["screenshot"] = tool_output.get("screenshot")
             agent_trace.append(trace_entry)
 
             if on_step_callback:
                 on_step_callback(agent_trace)
 
+            resp_kwargs = {"name": fn_name, "response": {"result": tool_output}}
+            call_id = getattr(tool_call, "id", None)
+            if call_id:
+                resp_kwargs["id"] = call_id
+
             function_response_parts.append(
-                types.Part.from_function_response(
-                    name=fn_name,
-                    response={"result": tool_output},
-                )
+                types.Part.from_function_response(**resp_kwargs)
             )
 
         contents.append(types.Content(role="user", parts=function_response_parts))
@@ -324,7 +390,6 @@ async def run_gemini_security_harness(
                 system_instruction=system_instruction,
                 response_mime_type="application/json",
                 response_schema=GeminiSecurityReport,
-                temperature=0.1,
             ),
         )
         report_data = json.loads(final_response.text)
@@ -333,23 +398,63 @@ async def run_gemini_security_harness(
         report_data["ai_error"] = None
     except Exception as exc:
         # Transparent fallback: return baseline structured results with clear status indicator
+        fallback_step_exists = any(t.get("tool") == "deterministic_baseline_fallback" for t in agent_trace)
+        if not fallback_step_exists:
+            trace_entry = {
+                "step": len(agent_trace) + 1,
+                "tool": "deterministic_baseline_fallback",
+                "status": "fallback",
+                "reason": "AI model invocation failed; executing deterministic ASVS evaluator.",
+                "observation_preview": f"AI error: {str(exc)[:180]}",
+            }
+            agent_trace.append(trace_entry)
+            if on_step_callback:
+                on_step_callback(agent_trace)
+
         report_data = {
             "score": baseline_result["score"],
             "grade": baseline_result["grade"],
+            "scan_status": baseline_result.get("scan_status", "not_assessed" if baseline_result.get("metrics", {}).get("total_evaluated", 0) == 0 else "completed"),
+            "coverage_percentage": baseline_result.get("coverage_percentage", 0.0),
+            "pass_rate_percentage": baseline_result.get("pass_rate_percentage"),
             "is_ai_synthesized": False,
             "ai_assessment_status": "FAILED",
             "ai_error": str(exc),
             "summary": (
-                f"Automated baseline assessment completed across {len(asvs_requirements)} chapter requirements. "
-                f"(Note: Gemini AI reasoning/synthesis was unavailable [{type(exc).__name__}]; "
-                f"deterministic baseline results returned)."
+                f"AI reasoning/synthesis was unavailable; automated baseline assessment completed across "
+                f"{len(asvs_requirements)} chapter requirements ({type(exc).__name__}: {str(exc)[:100]})."
             ),
             "asvs_results": baseline_result["asvs_results"],
             "findings": baseline_result["findings"],
+            "metrics": baseline_result.get("metrics", {}),
         }
+
+    # Zero-evaluated score guard
+    eval_count = sum(
+        1 for item in report_data.get("asvs_results", [])
+        if (isinstance(item, dict) and item.get("status") in ["PASS", "FAIL"])
+        or (hasattr(item, "status") and getattr(item, "status") in ["PASS", "FAIL"])
+    )
+    if eval_count == 0:
+        report_data["score"] = None
+        report_data["grade"] = "NOT_ASSESSED"
+        report_data["scan_status"] = "not_assessed"
+    elif "scan_status" not in report_data:
+        report_data["scan_status"] = "completed"
+
+    if baseline_screenshot and not report_data.get("screenshot"):
+        report_data["screenshot"] = baseline_screenshot
 
     # Ensure findings are deduplicated with preserved mappings
     report_data["findings"] = deduplicate_findings(report_data.get("findings", []))
+    if baseline_screenshot:
+        for f in report_data.get("findings", []):
+            if not f.get("screenshot"):
+                f["screenshot"] = baseline_screenshot
+        for r in report_data.get("asvs_results", []):
+            if isinstance(r, dict) and not r.get("screenshot"):
+                r["screenshot"] = baseline_screenshot
+
     report_data["agent_trace"] = agent_trace
     report_data["raw_headers"] = doc_headers
     return report_data

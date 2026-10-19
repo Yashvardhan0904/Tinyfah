@@ -323,6 +323,170 @@ class TestAssessmentLogic(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(empty_valid)
         self.assertIn("missing a valid hostname", err_empty)
 
+    # -------------------------------------------------------------------------
+    # 9. Screenshots Facility via Browser API CDP Session & Schema Consistency
+    # -------------------------------------------------------------------------
+    def test_screenshot_schemas_serialization(self):
+        """TestResult, ASVSTestItem, FindingItem, and GeminiSecurityReport schemas must support screenshot."""
+        sample_screenshot = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+
+        # TestResult dataclass & to_dict
+        res = TestResult(
+            shortcode="V1.2.1",
+            name="Verify Context-Aware HTML Encoding",
+            status="FAIL",
+            severity="high",
+            evidence="Canary probe <tinyfah-canary-v1> was reflected unencoded",
+            screenshot=sample_screenshot,
+        )
+        res_dict = res.to_dict()
+        self.assertIn("screenshot", res_dict)
+        self.assertEqual(res_dict["screenshot"], sample_screenshot)
+
+        # ASVSTestItem Pydantic schema
+        asvs_item = ASVSTestItem(
+            requirement_id="V1.2.1",
+            chapter_code="V1",
+            chapter_name="Encoding and Sanitization",
+            status="FAIL",
+            severity="high",
+            evidence="Probe reflected",
+            remediation="HTML encode dynamic variables",
+            screenshot=sample_screenshot,
+        )
+        self.assertEqual(asvs_item.screenshot, sample_screenshot)
+        self.assertIn("screenshot", asvs_item.model_dump())
+
+        # FindingItem Pydantic schema
+        finding_item = FindingItem(
+            severity="high",
+            category="Encoding",
+            title="Reflected XSS Vulnerability",
+            evidence="Probe reflected unescaped",
+            remediation="Sanitize input",
+            screenshot=sample_screenshot,
+        )
+        self.assertEqual(finding_item.screenshot, sample_screenshot)
+        self.assertIn("screenshot", finding_item.model_dump())
+
+        # GeminiSecurityReport Pydantic schema
+        report_item = GeminiSecurityReport(
+            score=75,
+            grade="B",
+            summary="Audit completed",
+            asvs_results=[asvs_item],
+            findings=[finding_item],
+            screenshot=sample_screenshot,
+        )
+        self.assertEqual(report_item.screenshot, sample_screenshot)
+        self.assertIn("screenshot", report_item.model_dump())
+
+    async def test_harness_context_capture_screenshot_cdp(self):
+        """HarnessContext must use CDP session (Page.enable & Page.captureScreenshot), falling back to page.screenshot."""
+        sample_b64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
+
+        # Case A: Successful CDP capture
+        mock_cdp = AsyncMock()
+        mock_cdp.send.side_effect = lambda cmd, args=None: (
+            {"data": sample_b64} if cmd == "Page.captureScreenshot" else {}
+        )
+        ctx = HarnessContext(
+            page=None,
+            cdp=mock_cdp,
+            target_url="https://example.com",
+            doc_headers={},
+            cdp_issues=[],
+        )
+        screenshot_data = await ctx.capture_screenshot()
+        self.assertEqual(screenshot_data, f"data:image/png;base64,{sample_b64}")
+        mock_cdp.send.assert_any_call("Page.enable")
+        mock_cdp.send.assert_any_call("Page.captureScreenshot", {"format": "png"})
+
+        # Case B: CDP failure falls back to page.screenshot
+        mock_failing_cdp = AsyncMock()
+        mock_failing_cdp.send.side_effect = RuntimeError("CDP command failed")
+        mock_page = AsyncMock()
+        mock_page.screenshot.return_value = b"\x89PNG\r\n\x1a\n\x00mockdata"
+        ctx_fallback = HarnessContext(
+            page=mock_page,
+            cdp=mock_failing_cdp,
+            target_url="https://example.com",
+            doc_headers={},
+            cdp_issues=[],
+        )
+        screenshot_fallback = await ctx_fallback.capture_screenshot()
+        self.assertTrue(screenshot_fallback.startswith("data:image/png;base64,"))
+        mock_page.screenshot.assert_awaited_once_with(type="png")
+
+    async def test_screenshot_propagation_in_reporter_and_deduplication(self):
+        """Reporter and deduplication must preserve screenshots on findings and test results."""
+        sample_screenshot = "data:image/png;base64,mockevidence123"
+
+        # 1. Failed TestResult carries screenshot into raw_findings and findings list
+        failed_res = TestResult(
+            shortcode="V1.2.1",
+            name="Context-Aware HTML Encoding",
+            status="FAIL",
+            severity="high",
+            evidence="Reflected canary in <div id='out'>",
+            screenshot=sample_screenshot,
+        )
+        passed_res = TestResult(
+            shortcode="V1.2.2",
+            name="Context-Aware JavaScript Encoding",
+            status="PASS",
+            severity="info",
+            evidence="Script properly escaped",
+            screenshot=sample_screenshot,
+        )
+
+        site_report = await generate_site_report(
+            target_url="https://example.com",
+            results=[failed_res, passed_res],
+            raw_headers={},
+            use_ai_synthesis=False,
+        )
+        self.assertEqual(len(site_report["findings"]), 1)
+        self.assertEqual(site_report["findings"][0]["screenshot"], sample_screenshot)
+        self.assertEqual(site_report["asvs_results"][0]["screenshot"], sample_screenshot)
+
+        # 2. deduplicate_findings preserves screenshot across merged duplicates
+        duplicate_findings = [
+            {
+                "type": "header",
+                "severity": "medium",
+                "detail": "Missing HSTS Header",
+                "asvs": "V3.4.1",
+                "evidence": "Strict-Transport-Security missing",
+                "screenshot": None,
+            },
+            {
+                "type": "header",
+                "severity": "medium",
+                "detail": "Missing HSTS Header",
+                "asvs": "V3.4.1",
+                "evidence": "Observed header keys: ...",
+                "screenshot": sample_screenshot,
+            },
+        ]
+        deduped = deduplicate_findings(duplicate_findings)
+        self.assertEqual(len(deduped), 1)
+        self.assertEqual(deduped[0]["screenshot"], sample_screenshot)
+
+        # 3. evaluate_asvs_requirements propagates screenshot parameter
+        eval_res = evaluate_asvs_requirements(
+            requirements=[{"requirement_id": "V4.1.1", "chapter_code": "V4", "description": "Content-Type"}],
+            headers={},
+            cookies=[],
+            dom_data={},
+            cdp_issues=[],
+            protocol="https:",
+            screenshot=sample_screenshot,
+        )
+        self.assertEqual(eval_res["screenshot"], sample_screenshot)
+        self.assertEqual(eval_res["asvs_results"][0]["screenshot"], sample_screenshot)
+        self.assertEqual(eval_res["findings"][0]["screenshot"], sample_screenshot)
+
 
 if __name__ == "__main__":
     unittest.main()

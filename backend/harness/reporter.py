@@ -47,7 +47,7 @@ from google.genai import types
 from harness.registry import TestResult
 from checks import deduplicate_findings
 
-DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
+DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 
 def calculate_score_and_grade(results: List[TestResult]) -> Tuple[Optional[int], str]:
     """
@@ -130,6 +130,7 @@ async def generate_site_report(
             "observations": f.observations or f.evidence,
             "expected_behavior": f.expected_behavior,
             "limitations": f.limitations,
+            "screenshot": f.screenshot,
         })
 
     # Deduplicate findings while preserving all evidence and valid ASVS mappings
@@ -160,8 +161,7 @@ async def generate_site_report(
                 f"Failed Requirements: {json.dumps([f.to_dict() for f in failed], indent=2)}\n"
             )
 
-            # Try primary model, fallback to flash-lite if demand spike occurs
-            candidate_models = [DEFAULT_GEMINI_MODEL, "gemini-3.5-flash-lite", "gemini-flash-latest"]
+            candidate_models = [DEFAULT_GEMINI_MODEL]
             ai_resp = None
             last_err = None
             for model_name in candidate_models:
@@ -170,8 +170,7 @@ async def generate_site_report(
                         model=model_name,
                         contents=prompt,
                         config=types.GenerateContentConfig(
-                            temperature=0.2,
-                            max_output_tokens=250,
+                            max_output_tokens=300,
                         ),
                     )
                     if ai_resp and ai_resp.text:

@@ -12,9 +12,11 @@ from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from sqlmodel import Session, select
+from sqlalchemy.orm.attributes import flag_modified
 from database import init_db, get_session, Scan
 from scanner import execute_scan_task, validate_target_scope
 from asvs_loader import get_all_chapters, get_test_suite
+from checks import deduplicate_findings
 
 from tinyfah_loader import get_chapter_requirements, get_all_chapters_summary, get_input_legend, get_mode_legend
 from harness.registry import list_registered_tests
@@ -120,13 +122,60 @@ async def start_scan(
     )
     return scan
 
+def _normalize_scan_record(scan: Scan, db: Session) -> Scan:
+    if not scan or not scan.results or not isinstance(scan.results, dict):
+        return scan
+
+    modified = False
+    results = dict(scan.results)
+    asvs_results = results.get("asvs_results", [])
+    evaluated = [
+        r for r in asvs_results
+        if isinstance(r, dict) and r.get("status") in ["PASS", "FAIL"]
+    ]
+
+    # 1. Normalize zero-evaluated scans
+    if len(evaluated) == 0:
+        if scan.score is not None or scan.grade != "NOT_ASSESSED" or (scan.status not in ["not_assessed", "failed", "running", "queued"]):
+            scan.score = None
+            scan.grade = "NOT_ASSESSED"
+            if scan.status not in ["failed", "running", "queued"]:
+                scan.status = "not_assessed"
+            modified = True
+
+        if results.get("score") is not None or results.get("grade") != "NOT_ASSESSED":
+            results["score"] = None
+            results["grade"] = "NOT_ASSESSED"
+            if results.get("scan_status") not in ["failed", "running", "queued"]:
+                results["scan_status"] = "not_assessed"
+            results["coverage_percentage"] = 0.0
+            results["pass_rate_percentage"] = None
+            modified = True
+
+    # 2. Deduplicate findings if present
+    if "findings" in results and isinstance(results["findings"], list):
+        deduped = deduplicate_findings(results["findings"])
+        if len(deduped) != len(results["findings"]):
+            results["findings"] = deduped
+            modified = True
+
+    if modified:
+        scan.results = results
+        flag_modified(scan, "results")
+        db.add(scan)
+        db.commit()
+        db.refresh(scan)
+
+    return scan
+
 @app.get("/scans/{scan_id}", response_model=Scan)
 def get_scan(scan_id: int, db: Session = Depends(get_session)):
     scan = db.get(Scan, scan_id)
     if not scan:
         raise HTTPException(status_code=404, detail="Scan not found")
-    return scan
+    return _normalize_scan_record(scan, db)
 
 @app.get("/scans", response_model=list[Scan])
 def list_scans(db: Session = Depends(get_session)):
-    return db.exec(select(Scan).order_by(Scan.created_at.desc()).limit(20)).all()
+    scans = db.exec(select(Scan).order_by(Scan.created_at.desc()).limit(20)).all()
+    return [_normalize_scan_record(s, db) for s in scans]

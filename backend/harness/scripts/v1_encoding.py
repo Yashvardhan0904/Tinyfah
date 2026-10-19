@@ -80,7 +80,7 @@ async def test_v1_2_1(ctx: HarnessContext) -> TestResult:
                 level=ctx.metadata.get("level", 1),
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
-                target_url=target_url,
+                target_url=test_url,
                 http_status=http_status,
                 observations=f"Canary probe '{probe_val}' reflected unescaped into response body or DOM attributes.",
                 expected_behavior="Sensitive characters (<, >, \", ') must be converted to HTML entities (&lt;, &gt;, &quot;).",
@@ -100,7 +100,7 @@ async def test_v1_2_1(ctx: HarnessContext) -> TestResult:
                 level=ctx.metadata.get("level", 1),
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
-                target_url=target_url,
+                target_url=test_url,
                 http_status=http_status,
                 observations=f"Canary probe reflected safely as '{encoded_bracket}' with HTML entity escaping.",
                 expected_behavior="User input reflected in HTML elements or attributes must be safely HTML entity encoded.",
@@ -121,7 +121,7 @@ async def test_v1_2_1(ctx: HarnessContext) -> TestResult:
                 level=ctx.metadata.get("level", 1),
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
-                target_url=target_url,
+                target_url=test_url,
                 http_status=http_status,
                 observations="Query parameters 'q' and 'test' were sent to target URL, but their values were not reflected in the response body or DOM attributes.",
                 expected_behavior="Target landing page reflects query parameter or user input into HTML body/attribute context.",
@@ -140,7 +140,7 @@ async def test_v1_2_1(ctx: HarnessContext) -> TestResult:
             required_inputs=ctx.metadata.get("required_inputs", []),
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
-            target_url=target_url,
+            target_url=test_url,
             http_status=http_status,
             execution_error=str(e),
         )
@@ -207,7 +207,7 @@ async def test_v1_2_2(ctx: HarnessContext) -> TestResult:
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
-                target_url=target_url,
+                target_url=test_url,
                 http_status=http_status,
                 observations=f"Discovered active javascript: pseudo-protocol destinations in document links: {scheme_leaks}",
                 expected_behavior="Hyperlink destinations must strictly disallow javascript: and data: schemes.",
@@ -227,7 +227,7 @@ async def test_v1_2_2(ctx: HarnessContext) -> TestResult:
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
-                target_url=target_url,
+                target_url=test_url,
                 http_status=http_status,
                 observations="Injected parameter was handled and sanitized without permitting javascript: execution.",
                 expected_behavior="URL parameters used in link destinations must be safely scheme-validated.",
@@ -247,7 +247,7 @@ async def test_v1_2_2(ctx: HarnessContext) -> TestResult:
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
-                target_url=target_url,
+                target_url=test_url,
                 http_status=http_status,
                 observations="No links with injected redirect parameter were reflected on target page.",
                 expected_behavior="Target page reflects or uses destination URL parameter.",
@@ -264,7 +264,7 @@ async def test_v1_2_2(ctx: HarnessContext) -> TestResult:
             remediation="Ensure target server is reachable.",
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
-            target_url=target_url,
+            target_url=test_url,
             http_status=http_status,
             execution_error=str(e),
         )
@@ -332,7 +332,7 @@ async def test_v1_2_3(ctx: HarnessContext) -> TestResult:
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
-                target_url=target_url,
+                target_url=test_url,
                 http_status=http_status,
                 observations="Breakout payload broke out of JavaScript context into DOM structure.",
                 expected_behavior="Data embedded in script blocks must escape </script> sequences.",
@@ -352,7 +352,7 @@ async def test_v1_2_3(ctx: HarnessContext) -> TestResult:
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
-                target_url=target_url,
+                target_url=test_url,
                 http_status=http_status,
                 observations="Parameter reflected inside inline script with safe Unicode/slash escaping.",
                 expected_behavior="Injected script breakout tags must be neutralized.",
@@ -372,7 +372,7 @@ async def test_v1_2_3(ctx: HarnessContext) -> TestResult:
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
-                target_url=target_url,
+                target_url=test_url,
                 http_status=http_status,
                 observations="Probe parameter 'data' was not reflected into any inline script tags or JSON state.",
                 expected_behavior="Page reflects user input into client-side JavaScript execution context.",
@@ -389,7 +389,7 @@ async def test_v1_2_3(ctx: HarnessContext) -> TestResult:
             remediation="Ensure target server is reachable.",
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
-            target_url=target_url,
+            target_url=test_url,
             http_status=http_status,
             execution_error=str(e),
         )
@@ -404,7 +404,7 @@ async def test_v1_2_10(ctx: HarnessContext) -> TestResult:
     page = ctx.page
     target_url = ctx.target_url
 
-    http_status = None
+    http_status = ctx.http_status
     try:
         export_audit = await page.evaluate("""() => {
             const exportElements = Array.from(document.querySelectorAll('a, button, input[type="submit"]'))
@@ -437,6 +437,7 @@ async def test_v1_2_10(ctx: HarnessContext) -> TestResult:
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
                 target_url=target_url,
+                http_status=http_status,
                 observations=f"Export triggers identified on page: {export_audit['exportElements']}.",
                 expected_behavior="Exported spreadsheet files must neutralize leading formula control characters.",
                 limitations="Actual CSV download generation requires authenticated form submissions.",
@@ -457,6 +458,7 @@ async def test_v1_2_10(ctx: HarnessContext) -> TestResult:
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
                 target_url=target_url,
+                http_status=http_status,
                 observations="No export buttons, CSV links, or spreadsheet download actions detected on page.",
                 expected_behavior="Target page contains spreadsheet export functionality.",
                 limitations="CSV export feature not present on public landing page.",
@@ -473,6 +475,7 @@ async def test_v1_2_10(ctx: HarnessContext) -> TestResult:
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
             target_url=target_url,
+            http_status=http_status,
             execution_error=str(e),
         )
 
@@ -485,6 +488,7 @@ async def test_v1_3_1(ctx: HarnessContext) -> TestResult:
     start_time = time.time()
     page = ctx.page
     target_url = ctx.target_url
+    http_status = ctx.http_status
 
     try:
         editor_audit = await page.evaluate("""() => {
@@ -515,6 +519,7 @@ async def test_v1_3_1(ctx: HarnessContext) -> TestResult:
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
                 target_url=target_url,
+                http_status=http_status,
                 observations=f"Rich-text editor containers present on page: {editor_audit['tags']}.",
                 expected_behavior="Rich-text content must be sanitized with strict HTML allowlists.",
                 limitations="Manual verification required to inject and persist rich-text formatting payloads.",
@@ -535,6 +540,7 @@ async def test_v1_3_1(ctx: HarnessContext) -> TestResult:
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
                 target_url=target_url,
+                http_status=http_status,
                 observations="No contenteditable elements, TinyMCE, Quill, or CKEditor instances detected.",
                 expected_behavior="Page contains rich-text/WYSIWYG editor elements.",
                 limitations="No rich-text input interface on public landing page.",
@@ -551,6 +557,7 @@ async def test_v1_3_1(ctx: HarnessContext) -> TestResult:
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
             target_url=target_url,
+            http_status=http_status,
             execution_error=str(e),
         )
 
@@ -563,6 +570,7 @@ async def test_v1_3_4(ctx: HarnessContext) -> TestResult:
     start_time = time.time()
     page = ctx.page
     target_url = ctx.target_url
+    http_status = ctx.http_status
 
     try:
         svg_audit = await page.evaluate("""() => {
@@ -600,6 +608,7 @@ async def test_v1_3_4(ctx: HarnessContext) -> TestResult:
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
                 target_url=target_url,
+                http_status=http_status,
                 observations=f"Found scriptable tags in SVG elements on the page.",
                 expected_behavior="SVG elements must strip script tags, handlers, and foreignObjects.",
             )
@@ -619,6 +628,7 @@ async def test_v1_3_4(ctx: HarnessContext) -> TestResult:
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
                 target_url=target_url,
+                http_status=http_status,
                 observations=f"File upload inputs found on target page: {svg_audit['fileUploads']}.",
                 expected_behavior="Uploaded SVG files must be sanitized before being stored or served.",
                 limitations="Upload and rendering of a test SVG payload requires authenticated multipart submission.",
@@ -639,6 +649,7 @@ async def test_v1_3_4(ctx: HarnessContext) -> TestResult:
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
                 target_url=target_url,
+                http_status=http_status,
                 observations=f"Page has {svg_audit.get('totalSvg', 0)} static SVG elements and no file upload fields.",
                 expected_behavior="Target page supports user-supplied SVG uploads.",
                 limitations="Requirement ASVS V1.3.4 requires user-supplied SVG upload endpoints.",
@@ -655,6 +666,7 @@ async def test_v1_3_4(ctx: HarnessContext) -> TestResult:
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
             target_url=target_url,
+            http_status=http_status,
             execution_error=str(e),
         )
 
@@ -667,6 +679,7 @@ async def test_v1_3_5(ctx: HarnessContext) -> TestResult:
     start_time = time.time()
     page = ctx.page
     target_url = ctx.target_url
+    http_status = ctx.http_status
 
     try:
         md_audit = await page.evaluate("""() => {
@@ -696,6 +709,7 @@ async def test_v1_3_5(ctx: HarnessContext) -> TestResult:
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
                 target_url=target_url,
+                http_status=http_status,
                 observations=f"Markdown rendering library '{md_audit['detectedParser']}' found in global window context.",
                 expected_behavior="Client-side Markdown parser must sanitize raw HTML syntax and javascript: schemes.",
                 limitations="Manual verification required with interactive Markdown editing fields.",
@@ -716,6 +730,7 @@ async def test_v1_3_5(ctx: HarnessContext) -> TestResult:
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
                 target_url=target_url,
+                http_status=http_status,
                 observations="No Markdown parsing libraries (marked, showdown, markdown-it) detected in window context.",
                 expected_behavior="Page contains Markdown/BBCode parsing features.",
                 limitations="No Markdown parser attack surface detected on inspected landing page.",
@@ -732,6 +747,7 @@ async def test_v1_3_5(ctx: HarnessContext) -> TestResult:
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
             target_url=target_url,
+            http_status=http_status,
             execution_error=str(e),
         )
 
@@ -792,6 +808,7 @@ async def evaluate_v1_passive_and_review_requirements(
                     level=level,
                     tinyfish_mode=mode,
                     target_url=ctx.target_url,
+                    http_status=ctx.http_status,
                     observations="Inline script contains eval() or new Function() call.",
                     expected_behavior="Application code must not invoke dynamic string evaluation.",
                 )
@@ -809,6 +826,7 @@ async def evaluate_v1_passive_and_review_requirements(
                     level=level,
                     tinyfish_mode=mode,
                     target_url=ctx.target_url,
+                    http_status=ctx.http_status,
                     observations="Inspected inline script elements; no dynamic code evaluation found.",
                     expected_behavior="Inline scripts must not execute eval() or new Function().",
                     limitations="Evaluated inline scripts; external JavaScript bundles require source code review.",
@@ -828,6 +846,7 @@ async def evaluate_v1_passive_and_review_requirements(
                 level=level,
                 tinyfish_mode=mode,
                 target_url=ctx.target_url,
+                http_status=ctx.http_status,
                 observations=f"Content-Type: '{content_type}'.",
                 expected_behavior="Server decodes all inputs to canonical representation exactly once before validation.",
                 limitations="Server-side canonical decoding cannot be definitively proven by passive response inspection alone.",
@@ -847,6 +866,7 @@ async def evaluate_v1_passive_and_review_requirements(
                 level=level,
                 tinyfish_mode=mode,
                 target_url=ctx.target_url,
+                http_status=ctx.http_status,
                 expected_behavior=desc,
                 limitations=f"Requires {', '.join(inputs)} or architecture documentation.",
             )
