@@ -179,7 +179,16 @@ async def execute_scan_task(
                 async with async_playwright() as p:
                     browser = await p.chromium.connect_over_cdp(cdp_url)
                     context = browser.contexts[0]
-                    page = context.pages[0]
+                    while len(context.pages) > 1:
+                        try:
+                            await context.pages[-1].close()
+                        except Exception:
+                            break
+                    page = context.pages[0] if context.pages else await context.new_page()
+                    try:
+                        await context.clear_cookies()
+                    except Exception:
+                        pass
                     cdp = await context.new_cdp_session(page)
 
                     await cdp.send("Page.enable")

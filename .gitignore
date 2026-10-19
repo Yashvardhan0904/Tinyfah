@@ -1,1 +1,7 @@
+backend/scans.db*
 backend/.env
+backend/screenshots/
+screenshots/
+**/__pycache__/
+*.py[cod]
+*$py.class

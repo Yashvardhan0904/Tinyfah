@@ -46,6 +46,33 @@ async def vulnerable_page(q: str = "", redirect: str = ""):
 </html>
 """
 
+@test_app.get("/ssti_vulnerable", response_class=HTMLResponse)
+async def ssti_vulnerable_page(template: str = "", q: str = "", search: str = ""):
+    val = template or q or search
+    rendered = "49" if ("7*7" in val) else html.escape(val)
+    return f"""<!DOCTYPE html>
+<html>
+<head><title>SSTI Vulnerable</title></head>
+<body>
+    <h1>SSTI Testbed</h1>
+    <div id="template-output">{rendered}</div>
+</body>
+</html>
+"""
+
+@test_app.get("/ssti_secure", response_class=HTMLResponse)
+async def ssti_secure_page(template: str = "", q: str = "", search: str = ""):
+    val = template or q or search
+    return f"""<!DOCTYPE html>
+<html>
+<head><title>SSTI Secure</title></head>
+<body>
+    <h1>SSTI Secure Testbed</h1>
+    <div id="template-output">{html.escape(val)}</div>
+</body>
+</html>
+"""
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(test_app, host="127.0.0.1", port=8001)

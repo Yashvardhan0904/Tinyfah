@@ -9,8 +9,16 @@ BACKEND_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BACKEND_DIR))
 
 from checks import evaluate_asvs_requirements, deduplicate_findings, REQUIRED_HEADERS
-from harness.registry import TestResult, HarnessContext
+from harness.registry import (
+    TestResult,
+    HarnessContext,
+    TestCaseExecution,
+    ScriptDefinition,
+    get_script_definition,
+    list_script_definitions,
+)
 from harness.reporter import calculate_score_and_grade, generate_site_report
+from harness.scripts.v1_encoding import test_v1_3_7, evaluate_v1_passive_and_review_requirements
 from scanner import validate_target_scope
 from agent_harness import ASVSTestItem, FindingItem, GeminiSecurityReport
 
@@ -341,7 +349,8 @@ class TestAssessmentLogic(unittest.IsolatedAsyncioTestCase):
         )
         res_dict = res.to_dict()
         self.assertIn("screenshot", res_dict)
-        self.assertEqual(res_dict["screenshot"], sample_screenshot)
+        self.assertTrue(res_dict["screenshot"].endswith(".png"))
+        self.assertTrue((Path(__file__).resolve().parent / "screenshots" / res_dict["screenshot"]).is_file())
 
         # ASVSTestItem Pydantic schema
         asvs_item = ASVSTestItem(
@@ -398,7 +407,8 @@ class TestAssessmentLogic(unittest.IsolatedAsyncioTestCase):
             cdp_issues=[],
         )
         screenshot_data = await ctx.capture_screenshot()
-        self.assertEqual(screenshot_data, f"data:image/png;base64,{sample_b64}")
+        self.assertTrue(screenshot_data.endswith(".png"))
+        self.assertTrue((Path(__file__).resolve().parent / "screenshots" / screenshot_data).is_file())
         mock_cdp.send.assert_any_call("Page.enable")
         mock_cdp.send.assert_any_call("Page.captureScreenshot", {"format": "png"})
 
@@ -415,12 +425,13 @@ class TestAssessmentLogic(unittest.IsolatedAsyncioTestCase):
             cdp_issues=[],
         )
         screenshot_fallback = await ctx_fallback.capture_screenshot()
-        self.assertTrue(screenshot_fallback.startswith("data:image/png;base64,"))
+        self.assertTrue(screenshot_fallback.endswith(".png"))
+        self.assertTrue((Path(__file__).resolve().parent / "screenshots" / screenshot_fallback).is_file())
         mock_page.screenshot.assert_awaited_once_with(type="png")
 
     async def test_screenshot_propagation_in_reporter_and_deduplication(self):
         """Reporter and deduplication must preserve screenshots on findings and test results."""
-        sample_screenshot = "data:image/png;base64,mockevidence123"
+        sample_screenshot = "shot_v1_2_1_mock123.png"
 
         # 1. Failed TestResult carries screenshot into raw_findings and findings list
         failed_res = TestResult(
@@ -486,6 +497,160 @@ class TestAssessmentLogic(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(eval_res["screenshot"], sample_screenshot)
         self.assertEqual(eval_res["asvs_results"][0]["screenshot"], sample_screenshot)
         self.assertEqual(eval_res["findings"][0]["screenshot"], sample_screenshot)
+
+    # -------------------------------------------------------------------------
+    # 10. Chapter V1 Script Registry, V1.3.7 Template Injection & First-Class Evidence
+    # -------------------------------------------------------------------------
+    def test_script_definition_and_first_class_evidence(self):
+        """Verify V1 ScriptDefinitions and first-class TestResult evidence fields."""
+        # 1. ScriptDefinition registration
+        v137 = get_script_definition("V1.3.7")
+        self.assertIsNotNone(v137)
+        self.assertEqual(v137.script_id, "V1_3_7_TEMPLATE_INJECTION")
+        self.assertEqual(v137.execution_mode, "BROWSER_SCRIPT")
+        self.assertIn("pass", v137.evaluation_rules)
+        self.assertIn("fail", v137.evaluation_rules)
+        self.assertIn("manual_verify", v137.evaluation_rules)
+
+        # 2. TestCaseExecution dataclass serialization
+        tc = TestCaseExecution(
+            test_id="T1-JINJA2",
+            description="Submit {{7*7}} template probe",
+            execution_status="completed",
+            observation="Expression reflected literally without evaluation",
+            evidence={"probe": "{{7*7}}", "evaluated": False},
+        )
+        tc_dict = tc.to_dict()
+        self.assertEqual(tc_dict["test_id"], "T1-JINJA2")
+        self.assertEqual(tc_dict["execution_status"], "completed")
+
+        # 3. TestResult first-class evidence serialization
+        res = TestResult(
+            shortcode="V1.3.7",
+            script_id="V1_3_7_TEMPLATE_INJECTION",
+            name="Template Injection Protection",
+            status="MANUAL_VERIFY",
+            severity="info",
+            evidence="Template expressions submitted, but server-side execution could not be established.",
+            tests=[tc],
+            evidence_items=[tc_dict["evidence"]],
+            reason="The browser test could not establish server-side template evaluation.",
+            missing_evidence=[
+                "Server-side execution behavior",
+                "Relevant template rendering implementation",
+            ],
+            next_action="Review server-side rendering path or collect authenticated evidence.",
+            limitations=["Browser-visible behavior alone cannot establish server-side template evaluation."],
+        )
+        res_dict = res.to_dict()
+        self.assertEqual(res_dict["script_id"], "V1_3_7_TEMPLATE_INJECTION")
+        self.assertEqual(res_dict["verification_status"], "MANUAL_VERIFY")
+        self.assertEqual(res_dict["execution_status"], "completed")
+        self.assertEqual(len(res_dict["tests"]), 1)
+        self.assertEqual(res_dict["tests"][0]["test_id"], "T1-JINJA2")
+        self.assertEqual(res_dict["reason"], "The browser test could not establish server-side template evaluation.")
+        self.assertEqual(len(res_dict["missing_evidence"]), 2)
+        self.assertIn("Review server-side rendering", res_dict["next_action"])
+
+    async def test_v1_3_7_ssti_evaluation_mock(self):
+        """V1.3.7 test script must detect FAIL when 49 is evaluated, PASS on literal reflection, and MANUAL_VERIFY otherwise."""
+        # Case A: Evaluated template expression (49 rendered) -> FAIL
+        mock_page_vuln = AsyncMock()
+        mock_resp_vuln = AsyncMock()
+        mock_resp_vuln.status = 200
+        mock_resp_vuln.text = AsyncMock(return_value="<html><body>Result: 49</body></html>")
+        # Baseline returns no 49, probe returns 49
+        mock_page_vuln.goto.side_effect = [
+            AsyncMock(status=200, text=AsyncMock(return_value="<html><body>Baseline</body></html>")),
+            mock_resp_vuln,
+            mock_resp_vuln,
+            mock_resp_vuln,
+        ]
+        mock_page_vuln.evaluate.return_value = [{"name": "q", "type": "text"}]
+
+        ctx_vuln = HarnessContext(
+            page=mock_page_vuln,
+            cdp=None,
+            target_url="https://example.com/app",
+        )
+        res_vuln = await test_v1_3_7(ctx_vuln)
+        self.assertEqual(res_vuln.status, "FAIL")
+        self.assertEqual(res_vuln.verification_status, "FAIL")
+        self.assertEqual(res_vuln.script_id, "V1_3_7_TEMPLATE_INJECTION")
+        self.assertIn("evaluated to '49'", res_vuln.evidence)
+
+        # Case B: Literal unparsed reflection ({{7*7}} rendered) -> PASS
+        mock_page_pass = AsyncMock()
+        mock_resp_pass = AsyncMock()
+        mock_resp_pass.status = 200
+        mock_resp_pass.text = AsyncMock(return_value="<html><body>Query: {{7*7}}</body></html>")
+        mock_page_pass.goto.side_effect = [
+            AsyncMock(status=200, text=AsyncMock(return_value="<html><body>Baseline</body></html>")),
+            mock_resp_pass,
+            mock_resp_pass,
+            mock_resp_pass,
+        ]
+        mock_page_pass.evaluate.return_value = [{"name": "q", "type": "text"}]
+
+        ctx_pass = HarnessContext(
+            page=mock_page_pass,
+            cdp=None,
+            target_url="https://example.com/app",
+        )
+        res_pass = await test_v1_3_7(ctx_pass)
+        self.assertEqual(res_pass.status, "PASS")
+        self.assertEqual(res_pass.verification_status, "PASS")
+        self.assertIn("safely rendered as literal strings", res_pass.evidence)
+
+        # Case C: No reflection -> MANUAL_VERIFY with actionable reason & next_action
+        mock_page_manual = AsyncMock()
+        mock_resp_manual = AsyncMock()
+        mock_resp_manual.status = 200
+        mock_resp_manual.text = AsyncMock(return_value="<html><body>Generic Page</body></html>")
+        mock_page_manual.goto.side_effect = [
+            AsyncMock(status=200, text=AsyncMock(return_value="<html><body>Generic Page</body></html>")),
+            mock_resp_manual,
+            mock_resp_manual,
+            mock_resp_manual,
+        ]
+        mock_page_manual.evaluate.return_value = []
+
+        ctx_manual = HarnessContext(
+            page=mock_page_manual,
+            cdp=None,
+            target_url="https://example.com/app",
+        )
+        res_manual = await test_v1_3_7(ctx_manual)
+        self.assertEqual(res_manual.status, "MANUAL_VERIFY")
+        self.assertEqual(res_manual.verification_status, "MANUAL_VERIFY")
+        self.assertIsNotNone(res_manual.reason)
+        self.assertGreater(len(res_manual.missing_evidence), 0)
+        self.assertIsNotNone(res_manual.next_action)
+
+    async def test_actionable_manual_verify_coverage(self):
+        """All non-observable Chapter V1 requirements must return actionable MANUAL_VERIFY with reasons and next actions."""
+        from tinyfah_loader import get_chapter_requirements
+        v1_reqs = get_chapter_requirements("V1")
+        self.assertEqual(len(v1_reqs), 30)
+
+        ctx = HarnessContext(
+            page=None,
+            cdp=None,
+            target_url="https://example.com",
+            http_status=200,
+        )
+        passive_res = await evaluate_v1_passive_and_review_requirements(
+            all_v1_reqs=v1_reqs,
+            ctx=ctx,
+            executed_results={},
+        )
+        self.assertEqual(len(passive_res), 30)
+        for r in passive_res:
+            self.assertEqual(r.status, "MANUAL_VERIFY")
+            self.assertEqual(r.execution_status, "completed")
+            self.assertIsNotNone(r.reason, f"Missing reason on {r.shortcode}")
+            self.assertGreater(len(r.missing_evidence), 0, f"Missing missing_evidence on {r.shortcode}")
+            self.assertIsNotNone(r.next_action, f"Missing next_action on {r.shortcode}")
 
 
 if __name__ == "__main__":

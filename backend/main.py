@@ -19,7 +19,7 @@ from asvs_loader import get_all_chapters, get_test_suite
 from checks import deduplicate_findings
 
 from tinyfah_loader import get_chapter_requirements, get_all_chapters_summary, get_input_legend, get_mode_legend
-from harness.registry import list_registered_tests
+from harness.registry import list_registered_tests, list_script_definitions, get_script_definition
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -34,6 +34,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from fastapi.staticfiles import StaticFiles
+from screenshots import SCREENSHOTS_DIR
+
+app.mount("/screenshots", StaticFiles(directory=str(SCREENSHOTS_DIR)), name="screenshots")
+
 
 class ScanRequest(BaseModel):
     url: HttpUrl
@@ -87,6 +93,24 @@ def list_v1_registered_tests():
             for t in tests.values()
         ]
     }
+
+@app.get("/api/harness/v1/scripts")
+def list_v1_scripts():
+    """Returns the formal requirement-to-script definitions for Chapter V1."""
+    defs = list_script_definitions()
+    return {
+        "chapter": "V1 Encoding and Sanitization",
+        "script_count": len(defs),
+        "scripts": [s.to_dict() for s in defs.values()],
+    }
+
+@app.get("/api/harness/v1/scripts/{requirement_id}")
+def get_v1_script_detail(requirement_id: str):
+    """Returns the complete script specification for an ASVS requirement (e.g. V1.3.7)."""
+    script_def = get_script_definition(requirement_id)
+    if not script_def:
+        raise HTTPException(status_code=404, detail=f"No script definition found for requirement '{requirement_id}'")
+    return script_def.to_dict()
 
 @app.post("/scans", response_model=Scan)
 async def start_scan(

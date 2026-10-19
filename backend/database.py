@@ -13,7 +13,10 @@ class Scan(SQLModel, table=True):
     error: Optional[str] = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-sqlite_url = "sqlite:///./scans.db"
+from pathlib import Path
+
+DB_FILE = Path(__file__).resolve().parent / "scans.db"
+sqlite_url = f"sqlite:///{DB_FILE}"
 engine = create_engine(
     sqlite_url,
     connect_args={"check_same_thread": False, "timeout": 15}

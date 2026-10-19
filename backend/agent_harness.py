@@ -121,25 +121,52 @@ async def execute_cdp_tool(name: str, args: dict, page: Page, cdp: CDPSession) -
         format_choice = args.get("format", "png")
         if format_choice not in ["png", "jpeg"]:
             format_choice = "png"
+        from screenshots import save_screenshot
+        dock_injected = False
+        if page:
+            try:
+                from harness.console_hud import build_console_logs, INJECT_CONSOLE_JS
+                t_url = getattr(page, "url", "https://target")
+                logs = build_console_logs(
+                    target_url=t_url,
+                    current_test={"shortcode": "AGENT", "name": "Agent Interactive Snapshot", "status": "INFO", "evidence": "DevTools snapshot"},
+                )
+                await page.evaluate(INJECT_CONSOLE_JS, {
+                    "logs": logs,
+                    "target_url": t_url,
+                    "current_test": "Agent Interactive Snapshot",
+                })
+                dock_injected = True
+                await page.wait_for_timeout(100)
+            except Exception:
+                pass
         try:
-            await cdp.send("Page.enable")
-            send_args = {"format": format_choice}
-            if format_choice == "jpeg":
-                send_args["quality"] = int(args.get("quality", 80))
-            cdp_res = await cdp.send("Page.captureScreenshot", send_args)
-            if cdp_res and "data" in cdp_res:
-                data_url = f"data:image/{format_choice};base64,{cdp_res['data']}"
-                return {"status": "ok", "screenshot": data_url}
-        except Exception:
-            pass
+            if cdp:
+                try:
+                    await cdp.send("Page.enable")
+                    send_args = {"format": format_choice}
+                    if format_choice == "jpeg":
+                        send_args["quality"] = int(args.get("quality", 80))
+                    cdp_res = await cdp.send("Page.captureScreenshot", send_args)
+                    if cdp_res and "data" in cdp_res:
+                        fname = save_screenshot(cdp_res["data"], prefix="tool_shot")
+                        return {"status": "ok", "screenshot": fname}
+                except Exception:
+                    pass
 
-        try:
-            import base64
-            raw_bytes = await page.screenshot(type=format_choice)
-            b64_str = base64.b64encode(raw_bytes).decode("utf-8")
-            return {"status": "ok", "screenshot": f"data:image/{format_choice};base64,{b64_str}"}
-        except Exception as exc:
-            return {"status": "error", "error": f"Failed to capture screenshot: {str(exc)}"}
+            if page:
+                raw_bytes = await page.screenshot(type=format_choice)
+                fname = save_screenshot(raw_bytes, prefix="tool_shot")
+                return {"status": "ok", "screenshot": fname}
+        finally:
+            if dock_injected and page:
+                try:
+                    from harness.console_hud import REMOVE_CONSOLE_JS
+                    await page.evaluate(REMOVE_CONSOLE_JS)
+                except Exception:
+                    pass
+
+        return {"status": "error", "error": "Failed to capture screenshot"}
 
     return {"error": f"Unknown tool: {name}"}
 
@@ -230,19 +257,54 @@ async def run_gemini_security_harness(
     except Exception:
         pass
 
-    # Baseline screenshot via CDP session
+    # Baseline screenshot via CDP session with DevTools Console HUD
     baseline_screenshot = None
+    console_logs: List[Dict[str, Any]] = []
     try:
-        shot_res = await cdp.send("Page.captureScreenshot", {"format": "png"})
-        if shot_res and "data" in shot_res:
-            baseline_screenshot = f"data:image/png;base64,{shot_res['data']}"
+        from harness.console_hud import attach_console_listeners
+        attach_console_listeners(page, cdp, console_logs)
     except Exception:
+        pass
+
+    dock_injected = False
+    if page:
         try:
-            import base64
-            raw_bytes = await page.screenshot(type="png")
-            baseline_screenshot = f"data:image/png;base64,{base64.b64encode(raw_bytes).decode('utf-8')}"
+            from harness.console_hud import build_console_logs, INJECT_CONSOLE_JS
+            logs = build_console_logs(
+                target_url=target_url,
+                doc_headers=doc_headers,
+                captured_logs=console_logs,
+                current_test={"shortcode": "AUDIT", "name": "Baseline Security Audit", "status": "PASS", "evidence": f"Navigated to {target_url}"},
+            )
+            await page.evaluate(INJECT_CONSOLE_JS, {
+                "logs": logs,
+                "target_url": target_url,
+                "current_test": "Baseline Security Audit",
+            })
+            dock_injected = True
+            await page.wait_for_timeout(100)
         except Exception:
             pass
+
+    try:
+        from screenshots import save_screenshot
+        shot_res = await cdp.send("Page.captureScreenshot", {"format": "png"})
+        if shot_res and "data" in shot_res:
+            baseline_screenshot = save_screenshot(shot_res["data"], prefix="baseline")
+    except Exception:
+        try:
+            from screenshots import save_screenshot
+            raw_bytes = await page.screenshot(type="png")
+            baseline_screenshot = save_screenshot(raw_bytes, prefix="baseline")
+        except Exception:
+            pass
+    finally:
+        if dock_injected and page:
+            try:
+                from harness.console_hud import REMOVE_CONSOLE_JS
+                await page.evaluate(REMOVE_CONSOLE_JS)
+            except Exception:
+                pass
 
     # Step 0: Lightweight initial reconnaissance
     initial_recon = await page.evaluate("""() => ({

@@ -128,6 +128,12 @@ def deduplicate_findings(findings: List[Dict[str, Any]]) -> List[Dict[str, Any]]
             if not entry.get("screenshot") and f.get("screenshot"):
                 entry["screenshot"] = f.get("screenshot")
 
+            # Preserve tests and script_id
+            if not entry.get("tests") and f.get("tests"):
+                entry["tests"] = f.get("tests")
+            if not entry.get("script_id") and f.get("script_id"):
+                entry["script_id"] = f.get("script_id")
+
     result = []
     for entry in deduped.values():
         entry.pop("evidence_parts", None)
@@ -157,6 +163,10 @@ def evaluate_asvs_requirements(
         Low severity: -5 points
       Compliance Score = max(0, min(100, Base Score - sum(penalties)))
     """
+    if screenshot and screenshot.startswith("data:"):
+        from screenshots import save_screenshot
+        screenshot = save_screenshot(screenshot, prefix="check_shot")
+
     if not requirements:
         return {
             "score": None,
