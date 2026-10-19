@@ -15,6 +15,6 @@ class Scan(SQLModel, table=True):
 
 class ScanRequest(BaseModel):
     url: HttpUrl
-    suite: Optional[str] = "v1"  # "v1" | "chapter_v1" | "chapter_sample" | "first_five" | "full"
+    suite: Optional[str] = "v1"  # "v1" | "chapter_v1" | "langgraph" | "chapter_sample" | "first_five" | "full"
     test_id: Optional[str] = None           # e.g. "V1.2.1"
     focus_prompt: Optional[str] = None

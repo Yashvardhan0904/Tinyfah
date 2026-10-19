@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.config import SCREENSHOTS_DIR
+from app.config import SCREENSHOTS_DIR, ROOT_DIR
 from app.core.database import init_db
 from app.api.routes.asvs import router as asvs_router
 from app.api.routes.harness import router as harness_router
@@ -32,6 +32,11 @@ def create_app() -> FastAPI:
     app.include_router(asvs_router)
     app.include_router(harness_router)
     app.include_router(scans_router)
+    app.include_router(scans_router, prefix="/api")
+
+    frontend_dir = ROOT_DIR / "frontend"
+    if frontend_dir.exists():
+        app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
 
     return app
 

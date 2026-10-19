@@ -106,6 +106,7 @@ class HarnessEngine:
         chapter: str = "V1",
         single_test_id: Optional[str] = None,
         on_step_callback: Optional[Callable[[List[Dict[str, Any]]], None]] = None,
+        on_session_callback: Optional[Callable[[Dict[str, Any]], None]] = None,
     ) -> Dict[str, Any]:
         """
         Executes testing workflow against target_url using the hybrid architecture:
@@ -117,6 +118,8 @@ class HarnessEngine:
         """
         session_id = None
         cdp_url = None
+        live_view_url = None
+        browser_session: Dict[str, Any] = {}
         doc_headers: Dict[str, str] = {}
         cdp_issues: List[str] = []
         agent_trace: List[Dict[str, Any]] = []
@@ -133,6 +136,19 @@ class HarnessEngine:
                 browser = None
                 try:
                     if can_use_tinyfish:
+                        agent_trace.append({
+                            "step": 1,
+                            "phase": "browser_provisioning",
+                            "agent": "TinyFish Cloud Provisioner",
+                            "tool": "tinyfish_browser_api",
+                            "action": "session_request",
+                            "reason": f"Allocating cloud browser sandbox for target: {target_url}",
+                            "observation_preview": f"Contacting TinyFish API ({TINYFISH_URL}) to create remote browser container...",
+                            "status": "requesting",
+                        })
+                        if on_step_callback:
+                            on_step_callback(list(agent_trace))
+
                         try:
                             async with httpx.AsyncClient(timeout=45.0) as http_client:
                                 resp = await http_client.post(
@@ -144,6 +160,34 @@ class HarnessEngine:
                                 session_data = resp.json()
                                 session_id = session_data.get("session_id")
                                 cdp_url = session_data.get("cdp_url")
+                                live_view_url = session_data.get("live_view_url") or session_data.get("viewer_url")
+
+                            browser_session = {
+                                "provider": "tinyfish",
+                                "session_id": session_id,
+                                "cdp_url": cdp_url,
+                                "live_view_url": live_view_url,
+                                "status": "connected",
+                                "target_url": target_url,
+                            }
+                            if on_session_callback:
+                                on_session_callback(browser_session)
+
+                            agent_trace.append({
+                                "step": 2,
+                                "phase": "browser_provisioning",
+                                "agent": "TinyFish Cloud Provisioner",
+                                "tool": "tinyfish_browser_api",
+                                "action": "cdp_connected",
+                                "reason": "TinyFish browser session allocated and CDP WebSocket ready",
+                                "observation_preview": f"Session ID: '{session_id}'. CDP WebSocket acquired. Connecting Playwright to browser over CDP...",
+                                "status": "connected",
+                                "session_id": session_id,
+                                "cdp_url": cdp_url,
+                                "live_view_url": live_view_url,
+                            })
+                            if on_step_callback:
+                                on_step_callback(list(agent_trace))
 
                             browser = await p.chromium.connect_over_cdp(cdp_url)
                             context = browser.contexts[0]
@@ -165,10 +209,58 @@ class HarnessEngine:
                             browser = await p.chromium.launch(headless=True)
                             context = await browser.new_context()
                             page = await context.new_page()
+                            browser_session = {
+                                "provider": "local_playwright",
+                                "session_id": "local_chromium",
+                                "cdp_url": "local_cdp",
+                                "live_view_url": None,
+                                "status": "fallback",
+                                "target_url": target_url,
+                            }
+                            if on_session_callback:
+                                on_session_callback(browser_session)
+                            agent_trace.append({
+                                "step": 2,
+                                "phase": "browser_provisioning",
+                                "agent": "Local Playwright Provisioner",
+                                "tool": "playwright_local",
+                                "action": "browser_launched",
+                                "reason": f"TinyFish session request failed ({tf_err}); fallback to local headless Chromium",
+                                "observation_preview": "Local Chromium instance launched and attached successfully.",
+                                "status": "fallback",
+                                "session_id": "local_chromium",
+                                "cdp_url": "local_cdp",
+                            })
+                            if on_step_callback:
+                                on_step_callback(list(agent_trace))
                     else:
                         browser = await p.chromium.launch(headless=True)
                         context = await browser.new_context()
                         page = await context.new_page()
+                        browser_session = {
+                            "provider": "local_playwright",
+                            "session_id": "local_chromium",
+                            "cdp_url": "local_cdp",
+                            "live_view_url": None,
+                            "status": "connected",
+                            "target_url": target_url,
+                        }
+                        if on_session_callback:
+                            on_session_callback(browser_session)
+                        agent_trace.append({
+                            "step": 1,
+                            "phase": "browser_provisioning",
+                            "agent": "Local Playwright Provisioner",
+                            "tool": "playwright_local",
+                            "action": "browser_launched",
+                            "reason": "Target is local or running without remote TinyFish API key",
+                            "observation_preview": "Launched isolated local headless Chromium instance. CDP session established.",
+                            "status": "connected",
+                            "session_id": "local_chromium",
+                            "cdp_url": "local_cdp",
+                        })
+                        if on_step_callback:
+                            on_step_callback(list(agent_trace))
 
                     # Set up CDP session and listeners
                     cdp_session = None
@@ -538,6 +630,8 @@ class HarnessEngine:
                         raw_headers=doc_headers,
                         agent_trace=agent_trace,
                     )
+                    if isinstance(report, dict):
+                        report["browser_session"] = browser_session
 
                     return report
 

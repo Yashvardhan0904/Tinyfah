@@ -81,13 +81,35 @@ def get_first_n_tests(n: int = 5) -> List[Dict[str, Any]]:
                     return selected
     return selected
 
+def get_all_requirements() -> List[Dict[str, Any]]:
+    """Returns all requirements across all 17 chapters of OWASP ASVS 5.0.0."""
+    data = load_asvs_data()
+    all_reqs = []
+    for chap in data.get("Requirements", []):
+        chap_code = chap.get("Shortcode")
+        chap_name = chap.get("Name")
+        for sec in chap.get("Items", []):
+            sec_name = sec.get("Name")
+            for req in sec.get("Items", []):
+                all_reqs.append({
+                    "requirement_id": req.get("Shortcode"),
+                    "chapter_code": chap_code,
+                    "chapter_name": chap_name,
+                    "section_name": sec_name,
+                    "description": req.get("Description"),
+                    "level": req.get("L", "1"),
+                })
+    return all_reqs
+
 def get_test_suite(suite_type: str = "chapter_sample") -> List[Dict[str, Any]]:
     """
     Selects tests based on suite_type:
     - 'first_five': first 5 tests in the specification
     - 'chapter_sample': 1 test per chapter across all 17 chapters
-    - 'full': all requirements
+    - 'full' / 'all' / 'all_standards': all 345 requirements across all 17 chapters
     """
     if suite_type == "first_five":
         return get_first_n_tests(5)
+    if suite_type in ["full", "all", "all_standards", "all_chapters"]:
+        return get_all_requirements()
     return get_one_test_per_chapter()

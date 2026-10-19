@@ -98,6 +98,81 @@ def get_scan(scan_id: int, db: Session = Depends(get_session)):
         raise HTTPException(status_code=404, detail="Scan not found")
     return normalize_scan_record(scan, db)
 
+@router.get("/scans/{scan_id}/stream")
+async def stream_scan_progress(scan_id: int):
+    """
+    Server-Sent Events (SSE) stream yielding real-time browser session state,
+    agent execution traces, and final report. Ideal for live UI progress indicators.
+    """
+    import json
+    import asyncio
+    from fastapi.responses import StreamingResponse
+    from app.core.database import engine
+
+    async def event_generator():
+        last_step_count = -1
+        last_status = None
+        seen_browser_session = False
+        iteration = 0
+        max_idle_ticks = 400  # 400 * 0.5s = 200 seconds safety
+
+        while iteration < max_idle_ticks:
+            iteration += 1
+            with Session(engine) as db:
+                scan = db.get(Scan, scan_id)
+                if not scan:
+                    yield f"event: error\ndata: {json.dumps({'error': 'Scan not found'})}\n\n"
+                    break
+
+                normalized = normalize_scan_record(scan, db)
+                status = normalized.status
+                results = normalized.results or {}
+                trace = results.get("agent_trace", [])
+                browser_session = results.get("browser_session")
+
+                has_new_session = bool(browser_session and not seen_browser_session)
+                has_new_trace = len(trace) != last_step_count
+                status_changed = status != last_status
+
+                if has_new_trace or status_changed or has_new_session:
+                    last_step_count = len(trace)
+                    last_status = status
+                    if browser_session:
+                        seen_browser_session = True
+
+                    payload = {
+                        "id": normalized.id,
+                        "url": normalized.url,
+                        "status": status,
+                        "grade": normalized.grade,
+                        "score": normalized.score,
+                        "browser_session": browser_session,
+                        "trace_count": len(trace),
+                        "agent_trace": trace,
+                        "latest_step": trace[-1] if trace else None,
+                        "error": normalized.error,
+                    }
+                    if status in ["completed", "failed", "not_assessed"]:
+                        payload["results"] = results
+
+                    yield f"event: message\ndata: {json.dumps(payload, default=str)}\n\n"
+
+                if status in ["completed", "failed", "not_assessed"]:
+                    yield f"event: done\ndata: {json.dumps({'status': status, 'grade': normalized.grade, 'score': normalized.score})}\n\n"
+                    break
+
+            await asyncio.sleep(0.5)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
 @router.get("/scans", response_model=List[Scan])
 def list_scans(db: Session = Depends(get_session)):
     scans = db.exec(select(Scan).order_by(Scan.created_at.desc()).limit(20)).all()

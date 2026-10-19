@@ -38,6 +38,18 @@ def save_live_trace(scan_id: int, trace: list) -> None:
             db.add(scan)
             db.commit()
 
+def save_browser_session(scan_id: int, session_info: Dict[str, Any]) -> None:
+    """Writes browser session details (provider, session_id, cdp_url, status) to SQLite."""
+    with Session(engine) as db:
+        scan = db.get(Scan, scan_id)
+        if scan:
+            if not scan.results:
+                scan.results = {}
+            scan.results["browser_session"] = dict(session_info)
+            flag_modified(scan, "results")
+            db.add(scan)
+            db.commit()
+
 def _save_scan_report(scan_id: int, report: Dict[str, Any]) -> None:
     """Persists finalized audit report to the database with consistent scoring safeguards."""
     with Session(engine) as db:
@@ -96,17 +108,16 @@ async def execute_scan_task(
                 db.commit()
         return
 
-    # 2. Chapter V1 Deterministic Harness Execution
-    if suite in ["v1", "chapter_v1"] or test_id:
+    # 2. LangGraph Multi-Agent Security Audit Workflow (Full ASVS & Domain Agents)
+    if suite in ["langgraph", "agent_graph", "multi_agent", "v1_langgraph", "all", "all_standards", "asvs_all", "full", "all_chapters"]:
         update_scan_status(scan_id, "running")
         try:
-            from harness.engine import HarnessEngine
-            engine_instance = HarnessEngine(tinyfish_api_key=TINYFISH_API_KEY)
-            report = await engine_instance.execute_harness(
+            from app.graph.runner import run_langgraph_security_audit
+            report = await run_langgraph_security_audit(
                 target_url=target_url,
-                chapter="V1",
-                single_test_id=test_id,
+                suite=suite,
                 on_step_callback=lambda trace: save_live_trace(scan_id, trace),
+                on_session_callback=lambda session_info: save_browser_session(scan_id, session_info),
             )
             _save_scan_report(scan_id, report)
         except Exception as exc:
@@ -121,7 +132,33 @@ async def execute_scan_task(
                     db.commit()
         return
 
-    # 3. Legacy General ASVS Suite Execution
+    # 3. Chapter V1 Deterministic Harness Execution
+    if suite in ["v1", "chapter_v1"] or test_id:
+        update_scan_status(scan_id, "running")
+        try:
+            from harness.engine import HarnessEngine
+            engine_instance = HarnessEngine(tinyfish_api_key=TINYFISH_API_KEY)
+            report = await engine_instance.execute_harness(
+                target_url=target_url,
+                chapter="V1",
+                single_test_id=test_id,
+                on_step_callback=lambda trace: save_live_trace(scan_id, trace),
+                on_session_callback=lambda session_info: save_browser_session(scan_id, session_info),
+            )
+            _save_scan_report(scan_id, report)
+        except Exception as exc:
+            with Session(engine) as db:
+                scan = db.get(Scan, scan_id)
+                if scan:
+                    scan.status = "failed"
+                    scan.error = str(exc)
+                    scan.score = None
+                    scan.grade = "NOT_ASSESSED"
+                    db.add(scan)
+                    db.commit()
+        return
+
+    # 4. Legacy General ASVS Suite Execution
     try:
         asvs_requirements = get_test_suite(suite)
     except Exception as e:
@@ -139,6 +176,29 @@ async def execute_scan_task(
                 session_data = resp.json()
                 session_id = session_data["session_id"]
                 cdp_url = session_data["cdp_url"]
+                live_view_url = session_data.get("live_view_url") or session_data.get("viewer_url")
+                save_browser_session(scan_id, {
+                    "provider": "tinyfish",
+                    "session_id": session_id,
+                    "cdp_url": cdp_url,
+                    "live_view_url": live_view_url,
+                    "status": "connected",
+                    "target_url": target_url,
+                })
+                save_live_trace(scan_id, [
+                    {
+                        "step": 1,
+                        "phase": "browser_provisioning",
+                        "agent": "TinyFish Cloud Provisioner",
+                        "tool": "tinyfish_browser_api",
+                        "action": "cdp_connected",
+                        "reason": "TinyFish browser session allocated and CDP WebSocket ready",
+                        "observation_preview": f"Session ID: '{session_id}'. CDP WebSocket acquired. Connecting Playwright to browser over CDP...",
+                        "status": "connected",
+                        "session_id": session_id,
+                        "cdp_url": cdp_url,
+                    }
+                ])
 
                 async with async_playwright() as p:
                     browser = await p.chromium.connect_over_cdp(cdp_url)

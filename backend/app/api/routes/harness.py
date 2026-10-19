@@ -54,3 +54,32 @@ def get_v1_script_detail(requirement_id: str):
     if not script_def:
         raise HTTPException(status_code=404, detail=f"No script definition found for requirement '{requirement_id}'")
     return script_def.to_dict()
+
+@router.get("/workflows")
+def list_available_workflows():
+    """Lists parallel security assessment workflows available for comparison."""
+    return {
+        "workflows": [
+            {
+                "id": "v1",
+                "name": "Deterministic Chapter V1 Harness",
+                "type": "deterministic",
+                "description": "Predefined test scripts executing active canary probes, browser workflows, and deterministic grading.",
+                "supported_suites": ["v1", "chapter_v1"],
+            },
+            {
+                "id": "langgraph",
+                "name": "LangGraph Multi-Agent Security Loop (All ASVS Standards)",
+                "type": "multi_agent_graph",
+                "description": "StateGraph orchestrating Reconnaissance, Supervisor, 6 Domain Specialists (Transport/Headers, Input/Encoding, Client DOM, Auth/Session, API/Web Services, Crypto/Data Protection), Universal ASVS Standards Evaluator across all 17 chapters (345 requirements), Evidence Validation, and Executive Synthesis.",
+                "supported_suites": ["langgraph", "all", "all_standards", "asvs_all", "agent_graph", "multi_agent", "full"],
+            },
+            {
+                "id": "chapter_sample",
+                "name": "General ASVS ReAct Harness",
+                "type": "linear_react",
+                "description": "Single-loop Gemini ReAct harness checking 1 sample test per ASVS chapter.",
+                "supported_suites": ["chapter_sample", "first_five", "full"],
+            },
+        ]
+    }

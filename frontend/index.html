@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tinyfah | OWASP ASVS AI Security Harness</title>
+  <meta name="description" content="Autonomous Web Application Security Verification Harness powered by TinyFish Cloud CDP and Multi-Agent LangGraph.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header Navigation -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="logo-badge">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="m9 12 2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="brand-title">TINYFAH <span class="badge-tag">ASVS 5.0</span></h1>
+          <p class="brand-subtitle">Autonomous Cloud Browser Security Harness</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <span class="status-indicator-pill online">
+          <span class="status-dot"></span>
+          <span id="backend-status-text">Backend Connected</span>
+        </span>
+        <button id="theme-toggle-btn" class="icon-button" title="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Scan Controller / Form -->
+    <section class="scan-controller-card glass-panel">
+      <form id="scan-form" class="scan-form">
+        <div class="form-row">
+          <div class="input-group url-input-group">
+            <label for="target-url-input">Target Web Application</label>
+            <div class="input-with-icon">
+              <svg class="input-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+              <input 
+                type="url" 
+                id="target-url-input" 
+                placeholder="https://example.com or https://iosc.win/" 
+                required 
+                value="https://iosc.win/"
+              />
+            </div>
+          </div>
+
+          <div class="input-group suite-input-group">
+            <label for="suite-select">Audit Workflow</label>
+            <div class="select-wrapper">
+              <select id="suite-select">
+                <option value="langgraph" selected>LangGraph Multi-Agent (All 345 ASVS Standards)</option>
+                <option value="v1">Deterministic Chapter V1 (Active Canary Probing)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-button-wrapper">
+            <button type="submit" id="start-scan-btn" class="primary-button">
+              <span class="button-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 3 19 12 5 21 5 3"/>
+                </svg>
+              </span>
+              <span class="button-text">Launch Security Scan</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- Real-Time Browser Session HUD (TinyFish & CDP) -->
+    <section id="browser-hud-section" class="browser-hud-card glass-panel" style="display: none;">
+      <div class="hud-header">
+        <div class="hud-title-group">
+          <div class="hud-icon-container pulsing">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <div>
+            <h2 class="hud-title">Cloud Browser Session Lifecycle</h2>
+            <p class="hud-subtitle" id="hud-status-desc">Initializing remote browser sandbox...</p>
+          </div>
+        </div>
+        <div class="hud-badges">
+          <span id="session-provider-badge" class="badge badge-purple">TinyFish CDP</span>
+          <span id="session-status-badge" class="badge badge-amber pulsing">CONNECTING</span>
+        </div>
+      </div>
+
+      <div class="hud-details-grid">
+        <div class="hud-field">
+          <span class="field-label">Target URL</span>
+          <span class="field-value font-mono" id="hud-target-url">—</span>
+        </div>
+        <div class="hud-field">
+          <span class="field-label">TinyFish Session ID</span>
+          <div class="field-with-copy">
+            <span class="field-value font-mono" id="hud-session-id">Waiting for API response...</span>
+            <button id="copy-session-btn" class="copy-btn" title="Copy Session ID" style="display: none;">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="hud-field hud-field-wide">
+          <span class="field-label">CDP WebSocket Endpoint</span>
+          <span class="field-value font-mono truncate" id="hud-cdp-url">Awaiting CDP handshake...</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live Execution Feed (SSE Terminal) -->
+    <section id="execution-feed-section" class="execution-feed-card glass-panel" style="display: none;">
+      <div class="feed-header">
+        <div class="feed-title-group">
+          <span class="pulse-ring"></span>
+          <h2 class="feed-title">Autonomous Agent Telemetry</h2>
+          <span id="sse-state-tag" class="sse-state-tag">STREAMING (SSE)</span>
+        </div>
+        <div class="step-counter" id="step-counter">Step 0</div>
+      </div>
+
+      <!-- Agent Trace Terminal Logs -->
+      <div class="terminal-container" id="terminal-container">
+        <div class="terminal-logs" id="terminal-logs">
+          <!-- Live step items will be appended here dynamically -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Results Overview (Completed Scan) -->
+    <section id="results-section" class="results-container" style="display: none;">
+      <!-- Score & Grade Banner -->
+      <div class="report-banner glass-panel">
+        <div class="score-card">
+          <div class="grade-ring" id="grade-ring">
+            <span class="grade-value" id="report-grade">—</span>
+          </div>
+          <div class="score-meta">
+            <span class="score-number"><strong id="report-score">0</strong> / 100</span>
+            <span class="score-label">ASVS Security Score</span>
+          </div>
+        </div>
+
+        <div class="metrics-grid">
+          <div class="metric-item">
+            <span class="metric-value text-cyan" id="metric-total">345</span>
+            <span class="metric-label">ASVS Standards</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-value text-blue" id="metric-evaluated">0</span>
+            <span class="metric-label">Evaluated</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-value text-emerald" id="metric-passed">0</span>
+            <span class="metric-label">Passed</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-value text-rose" id="metric-failed">0</span>
+            <span class="metric-label">Failed</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-value text-amber" id="metric-manual">0</span>
+            <span class="metric-label">Manual Verify</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Executive Summary -->
+      <div class="summary-card glass-panel">
+        <h3 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+          Executive Summary & AI Synthesis
+        </h3>
+        <div class="summary-content markdown-body" id="summary-content">
+          Loading executive synthesis...
+        </div>
+      </div>
+
+      <!-- Primary Findings -->
+      <div class="findings-card glass-panel">
+        <h3 class="section-title">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Deficiencies & Findings (<span id="findings-count">0</span>)
+        </h3>
+        <div class="findings-list" id="findings-list">
+          <!-- Findings cards inserted dynamically -->
+        </div>
+      </div>
+
+      <!-- ASVS Detailed Verification Matrix -->
+      <div class="asvs-matrix-card glass-panel">
+        <div class="matrix-header">
+          <h3 class="section-title">OWASP ASVS Verification Matrix</h3>
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All (<span id="tab-all-count">0</span>)</button>
+            <button class="filter-tab tab-fail" data-filter="FAIL">Failed (<span id="tab-fail-count">0</span>)</button>
+            <button class="filter-tab tab-pass" data-filter="PASS">Passed (<span id="tab-pass-count">0</span>)</button>
+            <button class="filter-tab tab-manual" data-filter="MANUAL_VERIFY">Manual Verify (<span id="tab-manual-count">0</span>)</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="asvs-table">
+            <thead>
+              <tr>
+                <th>Requirement</th>
+                <th>Chapter</th>
+                <th>Status</th>
+                <th>Severity</th>
+                <th>Evidence & Remediation</th>
+              </tr>
+            </thead>
+            <tbody id="asvs-table-body">
+              <!-- Matrix rows inserted dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Scans History -->
+    <section class="recent-scans-card glass-panel">
+      <div class="recent-header">
+        <h3 class="section-title">Recent Audits</h3>
+        <button id="refresh-scans-btn" class="secondary-button icon-button" title="Refresh scan list">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/>
+            <polyline points="1 20 1 14 7 14"/>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+          </svg>
+        </button>
+      </div>
+      <div class="scans-list" id="recent-scans-list">
+        <div class="scans-empty">Loading recent scans...</div>
+      </div>
+    </section>
+
+    <footer class="app-footer">
+      <p>Tinyfah Autonomous Security Harness &bull; OWASP ASVS v5.0.0 Standard &bull; Powered by TinyFish CDP & LangGraph</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

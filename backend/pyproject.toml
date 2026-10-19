@@ -12,6 +12,7 @@ dependencies = [
     "fastapi[standard]>=0.143.5",
     "google-genai>=2.31.0",
     "httpx>=0.28.1",
+    "langgraph>=1.2.16",
     "playwright>=1.64.0",
     "python-dotenv>=1.2.4",
     "sqlmodel>=0.0.48",
