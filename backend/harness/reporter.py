@@ -45,44 +45,10 @@ from typing import List, Dict, Any, Optional, Tuple
 from google import genai
 from google.genai import types
 from harness.registry import TestResult
-from checks import deduplicate_findings
+from app.services.checks import deduplicate_findings
+from app.services.scoring import calculate_score_and_grade
 
 DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
-
-def calculate_score_and_grade(results: List[TestResult]) -> Tuple[Optional[int], str]:
-    """
-    Calculates the compliance score (0-100) and letter grade (A-F).
-    Returns (None, "NOT_ASSESSED") if results is empty or if no requirements were definitively evaluated.
-    """
-    if not results:
-        return None, "NOT_ASSESSED"
-
-    evaluated = [r for r in results if r.status in ["PASS", "FAIL"]]
-    if not evaluated:
-        return None, "NOT_ASSESSED"
-
-    score = 100
-    for r in evaluated:
-        if r.status == "FAIL":
-            if r.severity == "high":
-                score -= 25
-            elif r.severity == "medium":
-                score -= 15
-            elif r.severity == "low":
-                score -= 5
-
-    score = max(0, min(100, score))
-    if score >= 90:
-        grade = "A"
-    elif score >= 75:
-        grade = "B"
-    elif score >= 60:
-        grade = "C"
-    elif score >= 45:
-        grade = "D"
-    else:
-        grade = "F"
-    return score, grade
 
 async def generate_site_report(
     target_url: str,

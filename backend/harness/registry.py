@@ -24,55 +24,19 @@ class HarnessContext:
         displaying live browser logs, security audits, and test execution evidence.
         Saves the image to the screenshots directory, and returns only its filename.
         """
-        from screenshots import save_screenshot
+        from app.core.screenshots import capture_hud_screenshot
         safe_prefix = prefix or (self.metadata.get("shortcode") if self.metadata else None) or "shot"
-
-        dock_injected = False
-        if self.page:
-            try:
-                from harness.console_hud import build_console_logs, INJECT_CONSOLE_JS, REMOVE_CONSOLE_JS
-                t_info = test_info or self.metadata
-                logs = build_console_logs(
-                    target_url=self.target_url,
-                    doc_headers=self.doc_headers,
-                    http_status=self.http_status,
-                    captured_logs=self.console_logs,
-                    current_test=t_info,
-                )
-                await self.page.evaluate(INJECT_CONSOLE_JS, {
-                    "logs": logs,
-                    "target_url": self.target_url,
-                    "current_test": t_info.get("name") if t_info else "",
-                })
-                dock_injected = True
-                await self.page.wait_for_timeout(100)
-            except Exception:
-                pass
-
-        try:
-            if self.cdp:
-                try:
-                    await self.cdp.send("Page.enable")
-                    res = await self.cdp.send("Page.captureScreenshot", {"format": format})
-                    if res and "data" in res:
-                        return save_screenshot(res["data"], prefix=safe_prefix)
-                except Exception:
-                    pass
-            if self.page:
-                try:
-                    img_bytes = await self.page.screenshot(type=format)
-                    return save_screenshot(img_bytes, prefix=safe_prefix)
-                except Exception:
-                    pass
-        finally:
-            if dock_injected and self.page:
-                try:
-                    from harness.console_hud import REMOVE_CONSOLE_JS
-                    await self.page.evaluate(REMOVE_CONSOLE_JS)
-                except Exception:
-                    pass
-
-        return None
+        return await capture_hud_screenshot(
+            page=self.page,
+            cdp=self.cdp,
+            target_url=self.target_url,
+            doc_headers=self.doc_headers,
+            http_status=self.http_status,
+            console_logs=self.console_logs,
+            test_info=test_info or self.metadata,
+            prefix=safe_prefix,
+            format_choice=format,
+        )
 
 @dataclass
 class TestCaseExecution:
