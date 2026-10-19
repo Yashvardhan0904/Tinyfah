@@ -1,0 +1,74 @@
+import time
+from dataclasses import dataclass, field
+from typing import Dict, Any, List, Optional, Callable, Awaitable
+
+@dataclass
+class HarnessContext:
+    page: Any
+    cdp: Any
+    target_url: str
+    doc_headers: Dict[str, str] = field(default_factory=dict)
+    cdp_issues: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class TestResult:
+    shortcode: str
+    name: str
+    status: str       # "PASS" | "FAIL" | "MANUAL_VERIFY" | "ERROR" | "SKIPPED"
+    severity: str     # "high" | "medium" | "low" | "info"
+    evidence: str
+    remediation: str
+    test_hint: str = ""
+    required_inputs: List[str] = field(default_factory=list)
+    chapter: str = ""
+    level: int = 1
+    tinyfish_mode: str = "BROWSER_SCRIPT"
+    duration_ms: int = 0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "shortcode": self.shortcode,
+            "requirement_id": self.shortcode,
+            "name": self.name,
+            "status": self.status,
+            "severity": self.severity,
+            "evidence": self.evidence,
+            "remediation": self.remediation,
+            "test_hint": self.test_hint,
+            "required_inputs": self.required_inputs,
+            "chapter": self.chapter,
+            "chapter_name": self.chapter,
+            "level": self.level,
+            "tinyfish_mode": self.tinyfish_mode,
+            "duration_ms": self.duration_ms,
+        }
+
+TestFunction = Callable[[HarnessContext], Awaitable[TestResult]]
+
+_TEST_REGISTRY: Dict[str, Dict[str, Any]] = {}
+
+def register_test(shortcode: str, name: str, description: Optional[str] = None):
+    """
+    Decorator to register a deterministic test script for a specific ASVS / Tinyfah requirement.
+    Usage:
+        @register_test("V1.2.1", "HTML & Attribute Output Encoding")
+        async def test_v1_2_1(ctx: HarnessContext) -> TestResult:
+            ...
+    """
+    def decorator(fn: TestFunction):
+        sc_upper = shortcode.strip().upper()
+        _TEST_REGISTRY[sc_upper] = {
+            "shortcode": sc_upper,
+            "name": name,
+            "description": description or name,
+            "fn": fn,
+        }
+        return fn
+    return decorator
+
+def get_registered_test(shortcode: str) -> Optional[Dict[str, Any]]:
+    return _TEST_REGISTRY.get(shortcode.strip().upper())
+
+def list_registered_tests() -> Dict[str, Dict[str, Any]]:
+    return dict(_TEST_REGISTRY)

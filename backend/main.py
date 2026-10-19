@@ -1,5 +1,9 @@
+import os
+from pathlib import Path
 from dotenv import load_dotenv
+
 # MUST run before importing scanner / agent_harness so env vars are loaded
+load_dotenv(Path(__file__).resolve().parent / ".env")
 load_dotenv()
 
 from typing import Optional, List, Dict, Any
@@ -11,6 +15,9 @@ from sqlmodel import Session, select
 from database import init_db, get_session, Scan
 from scanner import execute_scan_task
 from asvs_loader import get_all_chapters, get_test_suite
+
+from tinyfah_loader import get_chapter_requirements, get_all_chapters_summary, get_input_legend, get_mode_legend
+from harness.registry import list_registered_tests
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -28,7 +35,8 @@ app.add_middleware(
 
 class ScanRequest(BaseModel):
     url: HttpUrl
-    suite: Optional[str] = "chapter_sample"  # "chapter_sample" (1 test/chapter) | "first_five" | "full"
+    suite: Optional[str] = "v1"  # "v1" | "chapter_v1" | "chapter_sample" | "first_five" | "full"
+    test_id: Optional[str] = None           # e.g. "V1.2.1"
     focus_prompt: Optional[str] = None
 
 @app.get("/asvs/chapters")
@@ -39,11 +47,43 @@ def list_asvs_chapters():
 @app.get("/asvs/tests")
 def get_asvs_tests(suite: str = Query("chapter_sample", description="Test suite type")):
     """Returns the tests that will be run for the given suite type."""
+    if suite in ["v1", "chapter_v1"]:
+        v1_reqs = get_chapter_requirements("V1")
+        return {
+            "suite": suite,
+            "chapter": "V1 Encoding and Sanitization",
+            "count": len(v1_reqs),
+            "tests": v1_reqs
+        }
     tests = get_test_suite(suite)
     return {
         "suite": suite,
         "count": len(tests),
         "tests": tests
+    }
+
+@app.get("/api/harness/v1/requirements")
+def list_v1_requirements():
+    """Returns all 30 Chapter V1 requirements loaded directly from Tinyfah.json."""
+    reqs = get_chapter_requirements("V1")
+    return {
+        "chapter": "V1 Encoding and Sanitization",
+        "count": len(reqs),
+        "requirements": reqs,
+        "input_legend": get_input_legend(),
+        "mode_legend": get_mode_legend(),
+    }
+
+@app.get("/api/harness/v1/tests")
+def list_v1_registered_tests():
+    """Returns all registered deterministic test scripts for Chapter V1."""
+    tests = list_registered_tests()
+    return {
+        "registered_count": len(tests),
+        "tests": [
+            {"shortcode": t["shortcode"], "name": t["name"], "description": t["description"]}
+            for t in tests.values()
+        ]
     }
 
 @app.post("/scans", response_model=Scan)
@@ -52,7 +92,7 @@ async def start_scan(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_session),
 ):
-    suite_type = payload.suite or "chapter_sample"
+    suite_type = payload.suite or "v1"
     # Initialize results with empty traces and findings
     scan = Scan(
         url=str(payload.url),
@@ -67,7 +107,8 @@ async def start_scan(
         execute_scan_task,
         scan.id,
         scan.url,
-        suite_type
+        suite_type,
+        payload.test_id
     )
     return scan
 

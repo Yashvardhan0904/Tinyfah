@@ -1,14 +1,21 @@
 import os
 import json
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
 from playwright.async_api import Page, CDPSession
 from checks import evaluate_asvs_requirements
+from dotenv import load_dotenv
+
+env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(env_path)
+load_dotenv()
 
 # Picks up GEMINI_API_KEY from the environment
-client = genai.Client()
+gemini_key = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=gemini_key) if gemini_key else None
 MODEL_ID = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 # --- 1. Pydantic Schemas for Structured Output ---

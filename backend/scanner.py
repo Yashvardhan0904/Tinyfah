@@ -1,5 +1,6 @@
 import os
 import asyncio
+from typing import Optional, List, Dict, Any
 import httpx
 from dotenv import load_dotenv
 from sqlmodel import Session
@@ -8,6 +9,7 @@ from playwright.async_api import async_playwright
 from database import engine, Scan
 from agent_harness import run_gemini_security_harness
 from asvs_loader import get_test_suite
+from harness.engine import HarnessEngine
 
 load_dotenv()
 
@@ -44,11 +46,43 @@ async def execute_scan_task(
     scan_id: int, 
     target_url: str, 
     suite: str = "chapter_sample",
+    test_id: Optional[str] = None,
 ):
     headers = {"X-API-Key": TINYFISH_API_KEY, "Content-Type": "application/json"}
     session_id = None
     cdp_issues = []
     doc_headers = {}
+
+    # Check for Chapter V1 Deterministic Harness execution
+    if suite in ["v1", "chapter_v1"] or test_id:
+        update_scan_status(scan_id, "running")
+        try:
+            engine_instance = HarnessEngine(tinyfish_api_key=TINYFISH_API_KEY)
+            report = await engine_instance.execute_harness(
+                target_url=target_url,
+                chapter="V1",
+                single_test_id=test_id,
+                on_step_callback=lambda trace: save_live_trace(scan_id, trace),
+            )
+            with Session(engine) as db:
+                scan = db.get(Scan, scan_id)
+                if scan:
+                    scan.status = "completed"
+                    scan.score = report.get("score", 0)
+                    scan.grade = report.get("grade", "F")
+                    scan.results = report
+                    flag_modified(scan, "results")
+                    db.add(scan)
+                    db.commit()
+        except Exception as exc:
+            with Session(engine) as db:
+                scan = db.get(Scan, scan_id)
+                if scan:
+                    scan.status = "failed"
+                    scan.error = str(exc)
+                    db.add(scan)
+                    db.commit()
+        return
 
     # 1. Load the requested ASVS test requirements
     try:
