@@ -1,0 +1,4342 @@
+{
+  "standard": "ASVS 5.0.0",
+  "input_legend": {
+    "URL": "Target URL / scope",
+    "CRED": "1 test user (store in TinyFish Vault)",
+    "CRED2": "2 test users, same role (A and B)",
+    "ROLES": "Test users of different roles (low-priv + admin)",
+    "TEN": "Test users in 2 different tenants",
+    "ADMIN": "Admin test account",
+    "MFA": "MFA seed or saved Browser Context Profile",
+    "FILES": "Test files (oversized, malformed, EICAR, SVG, zip, EXIF image)",
+    "PAY": "Payload lists (XSS, SQLi, SSTI, weak passwords...)",
+    "OOB": "Out-of-band callback listener (Collaborator/interactsh-style)",
+    "MAIL": "Test inbox the agent/script can read",
+    "IDP": "OAuth/OIDC/SAML client config and IdP details",
+    "API": "API spec / endpoint list (OpenAPI, GraphQL schema)",
+    "BIZ": "Business-flow knowledge (steps, limits, resources)",
+    "DOCS": "Application documentation to review",
+    "SRC": "Source code access",
+    "INFRA": "Infra/server/config access",
+    "LOGS": "Log access to verify events",
+    "WAIT": "Long-running timers (minutes to hours)",
+    "ATK": "Attacker-origin test page on a different origin"
+  },
+  "mode_legend": {
+    "AGENT": {
+      "automatable": "yes",
+      "surface": "TinyFish Web Agent (goal + URL, natural language)"
+    },
+    "BROWSER_SCRIPT": {
+      "automatable": "yes",
+      "surface": "TinyFish Browser API (CDP) + your own test script"
+    },
+    "HYBRID": {
+      "automatable": "partial",
+      "surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)"
+    },
+    "EXTERNAL_TOOL": {
+      "automatable": "no",
+      "surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling"
+    },
+    "REVIEW": {
+      "automatable": "no",
+      "surface": "Not browser-testable: documentation, source, or infra/config review"
+    }
+  },
+  "requirements": [
+    {
+      "shortcode": "V1.1.1",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY",
+        "SRC"
+      ],
+      "test_hint": "Send double/mixed-encoded payloads; confirm single decode pass in code"
+    },
+    {
+      "shortcode": "V1.1.2",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Review that encoding happens at the output sink"
+    },
+    {
+      "shortcode": "V1.2.1",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Inject HTML/attr/CSS/header payloads; inspect resulting DOM and headers"
+    },
+    {
+      "shortcode": "V1.2.2",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Inject javascript:/data: into URL-building params; check encoding"
+    },
+    {
+      "shortcode": "V1.2.3",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Inject quote/script breakouts into JS and JSON contexts"
+    },
+    {
+      "shortcode": "V1.2.4",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 1,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY",
+        "SRC"
+      ],
+      "test_hint": "Black-box SQLi/NoSQLi probes (errors, timing); confirm parameterization in code"
+    },
+    {
+      "shortcode": "V1.2.5",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 1,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY",
+        "OOB",
+        "SRC"
+      ],
+      "test_hint": "Command-injection probes with OOB callback; confirm in code"
+    },
+    {
+      "shortcode": "V1.2.6",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY",
+        "SRC"
+      ],
+      "test_hint": "LDAP metachar probes on login/search (only if LDAP is used)"
+    },
+    {
+      "shortcode": "V1.2.7",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY",
+        "SRC"
+      ],
+      "test_hint": "XPath injection probes (only if XML/XPath is used)"
+    },
+    {
+      "shortcode": "V1.2.8",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY",
+        "SRC"
+      ],
+      "test_hint": "LaTeX payloads (only if LaTeX rendering exists)"
+    },
+    {
+      "shortcode": "V1.2.9",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Regex metachars in search fields; look for unexpected matching"
+    },
+    {
+      "shortcode": "V1.2.10",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "PAY"
+      ],
+      "test_hint": "Store =,+,-,@ values; export CSV/XLSX and inspect first characters"
+    },
+    {
+      "shortcode": "V1.3.1",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "PAY"
+      ],
+      "test_hint": "XSS payloads through rich-text/WYSIWYG editors"
+    },
+    {
+      "shortcode": "V1.3.2",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 1,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Find eval()/SpEL/dynamic code execution"
+    },
+    {
+      "shortcode": "V1.3.3",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY",
+        "SRC"
+      ],
+      "test_hint": "Over-long/unsafe chars into dangerous sinks; confirm sanitization in code"
+    },
+    {
+      "shortcode": "V1.3.4",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Upload SVG with script/foreignObject; open it directly"
+    },
+    {
+      "shortcode": "V1.3.5",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "PAY"
+      ],
+      "test_hint": "Script payloads in Markdown/BBCode/CSS/XSL input"
+    },
+    {
+      "shortcode": "V1.3.6",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "OOB"
+      ],
+      "test_hint": "SSRF via URL fields; point to OOB host and internal/metadata IPs"
+    },
+    {
+      "shortcode": "V1.3.7",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Template injection probes ({{7*7}}, ${7*7})"
+    },
+    {
+      "shortcode": "V1.3.8",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC",
+        "INFRA"
+      ],
+      "test_hint": "Review JNDI usage and config"
+    },
+    {
+      "shortcode": "V1.3.9",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Review memcache input handling"
+    },
+    {
+      "shortcode": "V1.3.10",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Format-string probes (%s, %n, {0})"
+    },
+    {
+      "shortcode": "V1.3.11",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY",
+        "MAIL"
+      ],
+      "test_hint": "CRLF in contact/email forms; inspect received mail"
+    },
+    {
+      "shortcode": "V1.3.12",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 3,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY",
+        "SRC"
+      ],
+      "test_hint": "Long crafted inputs and response timing; review regexes"
+    },
+    {
+      "shortcode": "V1.4.1",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Memory-safe string/copy review"
+    },
+    {
+      "shortcode": "V1.4.2",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Integer overflow checks review"
+    },
+    {
+      "shortcode": "V1.4.3",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Use-after-free/dangling pointer review"
+    },
+    {
+      "shortcode": "V1.5.1",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 1,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "FILES",
+        "OOB"
+      ],
+      "test_hint": "Upload XML/SVG/DOCX with external entity; watch OOB"
+    },
+    {
+      "shortcode": "V1.5.2",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Review deserialization allowlists"
+    },
+    {
+      "shortcode": "V1.5.3",
+      "chapter": "V1 Encoding and Sanitization",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Review parser consistency (JSON/XML/URL)"
+    },
+    {
+      "shortcode": "V2.1.1",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 1,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check input validation rules are documented"
+    },
+    {
+      "shortcode": "V2.1.2",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check contextual consistency rules are documented"
+    },
+    {
+      "shortcode": "V2.1.3",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check business logic limits are documented"
+    },
+    {
+      "shortcode": "V2.2.1",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 1,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "URL",
+        "CRED",
+        "PAY"
+      ],
+      "test_hint": "Submit boundary/invalid values in forms; report what is accepted"
+    },
+    {
+      "shortcode": "V2.2.2",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "API"
+      ],
+      "test_hint": "Bypass client-side validation by replaying requests with invalid data"
+    },
+    {
+      "shortcode": "V2.2.3",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED",
+        "BIZ"
+      ],
+      "test_hint": "Submit inconsistent combinations (ZIP/suburb, date ranges)"
+    },
+    {
+      "shortcode": "V2.3.1",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 1,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED",
+        "BIZ"
+      ],
+      "test_hint": "Skip steps by navigating directly to later steps of a flow"
+    },
+    {
+      "shortcode": "V2.3.2",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED",
+        "BIZ",
+        "DOCS"
+      ],
+      "test_hint": "Exceed documented per-user and global limits"
+    },
+    {
+      "shortcode": "V2.3.3",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "BIZ",
+        "INFRA"
+      ],
+      "test_hint": "Induce mid-flow failure; verify rollback"
+    },
+    {
+      "shortcode": "V2.3.4",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED2",
+        "BIZ"
+      ],
+      "test_hint": "Parallel bookings of the last available unit (race)"
+    },
+    {
+      "shortcode": "V2.3.5",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 3,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "ROLES",
+        "BIZ"
+      ],
+      "test_hint": "Attempt high-value action as one user; expect second approval"
+    },
+    {
+      "shortcode": "V2.4.1",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "API"
+      ],
+      "test_hint": "Burst calls; expect throttling (429)"
+    },
+    {
+      "shortcode": "V2.4.2",
+      "chapter": "V2 Validation and Business Logic",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "BIZ"
+      ],
+      "test_hint": "Submit flow at machine speed; expect rejection"
+    },
+    {
+      "shortcode": "V3.1.1",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check browser security-feature expectations are documented"
+    },
+    {
+      "shortcode": "V3.2.1",
+      "chapter": "V3 Web Frontend Security",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Request API/upload URLs as top-level navigation; check sandbox/attachment/Sec-Fetch handling"
+    },
+    {
+      "shortcode": "V3.2.2",
+      "chapter": "V3 Web Frontend Security",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Inject HTML in text fields; verify shown as text"
+    },
+    {
+      "shortcode": "V3.2.3",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY",
+        "SRC"
+      ],
+      "test_hint": "DOM clobbering markup; review client JS"
+    },
+    {
+      "shortcode": "V3.3.1",
+      "chapter": "V3 Web Frontend Security",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Read cookies via CDP; Secure and __Host-/__Secure- prefix"
+    },
+    {
+      "shortcode": "V3.3.2",
+      "chapter": "V3 Web Frontend Security",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "SameSite value per cookie purpose"
+    },
+    {
+      "shortcode": "V3.3.3",
+      "chapter": "V3 Web Frontend Security",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "__Host- prefix unless shared by design"
+    },
+    {
+      "shortcode": "V3.3.4",
+      "chapter": "V3 Web Frontend Security",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "HttpOnly on session cookie; token not in body/JS"
+    },
+    {
+      "shortcode": "V3.3.5",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Cookie name+value size at most 4096 bytes"
+    },
+    {
+      "shortcode": "V3.4.1",
+      "chapter": "V3 Web Frontend Security",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "HSTS on all responses; max-age >= 1 year; includeSubDomains for L2+"
+    },
+    {
+      "shortcode": "V3.4.2",
+      "chapter": "V3 Web Frontend Security",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "ATK"
+      ],
+      "test_hint": "Send varied Origin values; check ACAO reflection"
+    },
+    {
+      "shortcode": "V3.4.3",
+      "chapter": "V3 Web Frontend Security",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "CSP present with object-src and base-uri 'none'"
+    },
+    {
+      "shortcode": "V3.4.4",
+      "chapter": "V3 Web Frontend Security",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "X-Content-Type-Options nosniff on all responses"
+    },
+    {
+      "shortcode": "V3.4.5",
+      "chapter": "V3 Web Frontend Security",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Referrer-Policy set"
+    },
+    {
+      "shortcode": "V3.4.6",
+      "chapter": "V3 Web Frontend Security",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "ATK"
+      ],
+      "test_hint": "CSP frame-ancestors; try framing from another origin"
+    },
+    {
+      "shortcode": "V3.4.7",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "CSP reporting endpoint defined"
+    },
+    {
+      "shortcode": "V3.4.8",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "COOP header on HTML documents"
+    },
+    {
+      "shortcode": "V3.5.1",
+      "chapter": "V3 Web Frontend Security",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "ATK"
+      ],
+      "test_hint": "Cross-origin forged request to sensitive endpoint"
+    },
+    {
+      "shortcode": "V3.5.2",
+      "chapter": "V3 Web Frontend Security",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "ATK"
+      ],
+      "test_hint": "Send simple-request content types to preflight-reliant endpoints"
+    },
+    {
+      "shortcode": "V3.5.3",
+      "chapter": "V3 Web Frontend Security",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "API"
+      ],
+      "test_hint": "State-changing actions reachable via GET/HEAD/OPTIONS"
+    },
+    {
+      "shortcode": "V3.5.4",
+      "chapter": "V3 Web Frontend Security",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "INFRA"
+      ],
+      "test_hint": "Enumerate hostnames; check separate apps do not share an origin"
+    },
+    {
+      "shortcode": "V3.5.5",
+      "chapter": "V3 Web Frontend Security",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "ATK"
+      ],
+      "test_hint": "Send postMessage from untrusted origin and malformed syntax"
+    },
+    {
+      "shortcode": "V3.5.6",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Probe ?callback= JSONP"
+    },
+    {
+      "shortcode": "V3.5.7",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Fetch script resources; look for user-specific data"
+    },
+    {
+      "shortcode": "V3.5.8",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "ATK"
+      ],
+      "test_hint": "Embed authenticated resources cross-site; check CORP/Sec-Fetch"
+    },
+    {
+      "shortcode": "V3.6.1",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Scan DOM for external script/link without integrity attribute"
+    },
+    {
+      "shortcode": "V3.7.1",
+      "chapter": "V3 Web Frontend Security",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Detect legacy plugins/objects/applets"
+    },
+    {
+      "shortcode": "V3.7.2",
+      "chapter": "V3 Web Frontend Security",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Open-redirect probes on redirect parameters"
+    },
+    {
+      "shortcode": "V3.7.3",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Follow external redirect; observe warning with cancel option"
+    },
+    {
+      "shortcode": "V3.7.4",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Check HSTS preload status (hstspreload.org lookup)"
+    },
+    {
+      "shortcode": "V3.7.5",
+      "chapter": "V3 Web Frontend Security",
+      "level": 3,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "DOCS",
+        "URL"
+      ],
+      "test_hint": "Emulate browser lacking features; verify documented behavior"
+    },
+    {
+      "shortcode": "V4.1.1",
+      "chapter": "V4 API and Web Service",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "API"
+      ],
+      "test_hint": "Content-Type and charset on every response with a body"
+    },
+    {
+      "shortcode": "V4.1.2",
+      "chapter": "V4 API and Web Service",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "API"
+      ],
+      "test_hint": "Call http:// API endpoints; no silent redirect to https"
+    },
+    {
+      "shortcode": "V4.1.3",
+      "chapter": "V4 API and Web Service",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "API"
+      ],
+      "test_hint": "Send spoofed X-Forwarded-*/X-Real-IP; check effect"
+    },
+    {
+      "shortcode": "V4.1.4",
+      "chapter": "V4 API and Web Service",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "API"
+      ],
+      "test_hint": "Try unsupported HTTP methods"
+    },
+    {
+      "shortcode": "V4.1.5",
+      "chapter": "V4 API and Web Service",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC",
+        "DOCS"
+      ],
+      "test_hint": "Review per-message signatures"
+    },
+    {
+      "shortcode": "V4.2.1",
+      "chapter": "V4 API and Web Service",
+      "level": 2,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Request-smuggling tooling over raw sockets (CL/TE)"
+    },
+    {
+      "shortcode": "V4.2.2",
+      "chapter": "V4 API and Web Service",
+      "level": 3,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Check generated Content-Length vs framing"
+    },
+    {
+      "shortcode": "V4.2.3",
+      "chapter": "V4 API and Web Service",
+      "level": 3,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "HTTP/2-3 connection-specific headers via raw client"
+    },
+    {
+      "shortcode": "V4.2.4",
+      "chapter": "V4 API and Web Service",
+      "level": 3,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "CR/LF in HTTP/2-3 headers via raw client"
+    },
+    {
+      "shortcode": "V4.2.5",
+      "chapter": "V4 API and Web Service",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Review outbound URI/header length handling"
+    },
+    {
+      "shortcode": "V4.3.1",
+      "chapter": "V4 API and Web Service",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "API"
+      ],
+      "test_hint": "Deep/nested/expensive GraphQL queries"
+    },
+    {
+      "shortcode": "V4.3.2",
+      "chapter": "V4 API and Web Service",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "API"
+      ],
+      "test_hint": "Run introspection query in production"
+    },
+    {
+      "shortcode": "V4.4.1",
+      "chapter": "V4 API and Web Service",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "CRED"
+      ],
+      "test_hint": "Network log: ws:// vs wss://"
+    },
+    {
+      "shortcode": "V4.4.2",
+      "chapter": "V4 API and Web Service",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "ATK"
+      ],
+      "test_hint": "WebSocket handshake from untrusted origin"
+    },
+    {
+      "shortcode": "V4.4.3",
+      "chapter": "V4 API and Web Service",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "SRC"
+      ],
+      "test_hint": "Inspect WS auth tokens against session requirements"
+    },
+    {
+      "shortcode": "V4.4.4",
+      "chapter": "V4 API and Web Service",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Check WS token is obtained via authenticated HTTPS"
+    },
+    {
+      "shortcode": "V5.1.1",
+      "chapter": "V5 File Handling",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check file type/size rules documented"
+    },
+    {
+      "shortcode": "V5.2.1",
+      "chapter": "V5 File Handling",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Upload oversized file"
+    },
+    {
+      "shortcode": "V5.2.2",
+      "chapter": "V5 File Handling",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Mismatched extension vs magic bytes"
+    },
+    {
+      "shortcode": "V5.2.3",
+      "chapter": "V5 File Handling",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Archive with huge expansion/many entries (safe test file)"
+    },
+    {
+      "shortcode": "V5.2.4",
+      "chapter": "V5 File Handling",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Repeated uploads to hit quota"
+    },
+    {
+      "shortcode": "V5.2.5",
+      "chapter": "V5 File Handling",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Archive containing symlinks"
+    },
+    {
+      "shortcode": "V5.2.6",
+      "chapter": "V5 File Handling",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Pixel-flood image"
+    },
+    {
+      "shortcode": "V5.3.1",
+      "chapter": "V5 File Handling",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Upload script file; request it directly"
+    },
+    {
+      "shortcode": "V5.3.2",
+      "chapter": "V5 File Handling",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Traversal sequences in filenames"
+    },
+    {
+      "shortcode": "V5.3.3",
+      "chapter": "V5 File Handling",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Zip-slip archive"
+    },
+    {
+      "shortcode": "V5.4.1",
+      "chapter": "V5 File Handling",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Tamper filename parameters; check Content-Disposition"
+    },
+    {
+      "shortcode": "V5.4.2",
+      "chapter": "V5 File Handling",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Special characters in filenames; check header encoding"
+    },
+    {
+      "shortcode": "V5.4.3",
+      "chapter": "V5 File Handling",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Upload EICAR test file; check AV rejection"
+    },
+    {
+      "shortcode": "V6.1.1",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check anti-brute-force documentation"
+    },
+    {
+      "shortcode": "V6.1.2",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check context-specific password word list documented"
+    },
+    {
+      "shortcode": "V6.1.3",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check all auth pathways documented"
+    },
+    {
+      "shortcode": "V6.2.1",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Register/change with short passwords; check minimum length"
+    },
+    {
+      "shortcode": "V6.2.2",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Verify password-change function exists"
+    },
+    {
+      "shortcode": "V6.2.3",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Change requires current and new password"
+    },
+    {
+      "shortcode": "V6.2.4",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Top-3000 passwords rejected"
+    },
+    {
+      "shortcode": "V6.2.5",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "No composition rules; any characters allowed"
+    },
+    {
+      "shortcode": "V6.2.6",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Password fields use type=password"
+    },
+    {
+      "shortcode": "V6.2.7",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Paste events and password managers allowed"
+    },
+    {
+      "shortcode": "V6.2.8",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Login with truncated/case-changed password must fail"
+    },
+    {
+      "shortcode": "V6.2.9",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Accepts passwords of 64+ characters"
+    },
+    {
+      "shortcode": "V6.2.10",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Verify no periodic rotation policy"
+    },
+    {
+      "shortcode": "V6.2.11",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "URL",
+        "DOCS"
+      ],
+      "test_hint": "Documented context words rejected as passwords"
+    },
+    {
+      "shortcode": "V6.2.12",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Known breached passwords rejected"
+    },
+    {
+      "shortcode": "V6.3.1",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "CRED"
+      ],
+      "test_hint": "Brute-force burst on throwaway account; check lockout/throttle (avoid locking real users)"
+    },
+    {
+      "shortcode": "V6.3.2",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Try default accounts (root/admin/sa)"
+    },
+    {
+      "shortcode": "V6.3.3",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "MFA"
+      ],
+      "test_hint": "Verify MFA enforced; L3 hardware factor via CDP virtual authenticator"
+    },
+    {
+      "shortcode": "V6.3.4",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "DOCS",
+        "API"
+      ],
+      "test_hint": "Compare all authentication pathways for consistency"
+    },
+    {
+      "shortcode": "V6.3.5",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "MAIL"
+      ],
+      "test_hint": "Login from new device/location; check notification"
+    },
+    {
+      "shortcode": "V6.3.6",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Check email is not used as an auth factor"
+    },
+    {
+      "shortcode": "V6.3.7",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "MAIL"
+      ],
+      "test_hint": "Change credentials/email; check notification"
+    },
+    {
+      "shortcode": "V6.3.8",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Compare responses/codes/timing for valid vs invalid users in login, register, reset"
+    },
+    {
+      "shortcode": "V6.4.1",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "ADMIN",
+        "MAIL"
+      ],
+      "test_hint": "Inspect initial passwords/activation codes; expiry and reuse"
+    },
+    {
+      "shortcode": "V6.4.2",
+      "chapter": "V6 Authentication",
+      "level": 1,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Look for secret questions/password hints"
+    },
+    {
+      "shortcode": "V6.4.3",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "MFA",
+        "MAIL"
+      ],
+      "test_hint": "Reset flow must not bypass MFA"
+    },
+    {
+      "shortcode": "V6.4.4",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Review MFA loss recovery process"
+    },
+    {
+      "shortcode": "V6.4.5",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Review renewal reminders"
+    },
+    {
+      "shortcode": "V6.4.6",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "ADMIN",
+        "MAIL"
+      ],
+      "test_hint": "Admin-initiated reset must not let admin set password"
+    },
+    {
+      "shortcode": "V6.5.1",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "MFA"
+      ],
+      "test_hint": "Reuse OTP/lookup code a second time"
+    },
+    {
+      "shortcode": "V6.5.2",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Review lookup-secret storage"
+    },
+    {
+      "shortcode": "V6.5.3",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Review CSPRNG use for OTP seeds/codes"
+    },
+    {
+      "shortcode": "V6.5.4",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "MAIL"
+      ],
+      "test_hint": "Observe code length/entropy"
+    },
+    {
+      "shortcode": "V6.5.5",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "MAIL",
+        "WAIT"
+      ],
+      "test_hint": "Wait out expiry (10 min OOB, 30 s TOTP)"
+    },
+    {
+      "shortcode": "V6.5.6",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED",
+        "MFA"
+      ],
+      "test_hint": "Revoke an authentication factor"
+    },
+    {
+      "shortcode": "V6.5.7",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS",
+        "SRC"
+      ],
+      "test_hint": "Biometrics only as secondary factor"
+    },
+    {
+      "shortcode": "V6.5.8",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "TOTP time source is server-side"
+    },
+    {
+      "shortcode": "V6.6.1",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Check SMS/phone OTP options and warnings"
+    },
+    {
+      "shortcode": "V6.6.2",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "MAIL"
+      ],
+      "test_hint": "OOB code bound to original request"
+    },
+    {
+      "shortcode": "V6.6.3",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "MFA"
+      ],
+      "test_hint": "Brute-force OOB code; expect rate limit"
+    },
+    {
+      "shortcode": "V6.6.4",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "MFA"
+      ],
+      "test_hint": "Push-bombing test with real device"
+    },
+    {
+      "shortcode": "V6.7.1",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC",
+        "INFRA"
+      ],
+      "test_hint": "Review certificate storage protection"
+    },
+    {
+      "shortcode": "V6.7.2",
+      "chapter": "V6 Authentication",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Capture WebAuthn challenges via CDP virtual authenticator"
+    },
+    {
+      "shortcode": "V6.8.1",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Spoof identity across two IdPs with same user id"
+    },
+    {
+      "shortcode": "V6.8.2",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Strip/tamper assertion signature"
+    },
+    {
+      "shortcode": "V6.8.3",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Replay SAML assertion"
+    },
+    {
+      "shortcode": "V6.8.4",
+      "chapter": "V6 Authentication",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Check acr/amr/auth_time handling"
+    },
+    {
+      "shortcode": "V7.1.1",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check timeouts documented"
+    },
+    {
+      "shortcode": "V7.1.2",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check concurrent session policy documented"
+    },
+    {
+      "shortcode": "V7.1.3",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check federated session coordination documented"
+    },
+    {
+      "shortcode": "V7.2.1",
+      "chapter": "V7 Session Management",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Tamper/forge session token; expect rejection"
+    },
+    {
+      "shortcode": "V7.2.2",
+      "chapter": "V7 Session Management",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Tokens dynamic, not static API keys"
+    },
+    {
+      "shortcode": "V7.2.3",
+      "chapter": "V7 Session Management",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Sample many tokens; check uniqueness/entropy"
+    },
+    {
+      "shortcode": "V7.2.4",
+      "chapter": "V7 Session Management",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Token changes on login and re-authentication"
+    },
+    {
+      "shortcode": "V7.3.1",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "WAIT"
+      ],
+      "test_hint": "Idle until inactivity timeout; verify re-auth"
+    },
+    {
+      "shortcode": "V7.3.2",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "WAIT"
+      ],
+      "test_hint": "Stay active until absolute lifetime; verify re-auth"
+    },
+    {
+      "shortcode": "V7.4.1",
+      "chapter": "V7 Session Management",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Replay old token after logout"
+    },
+    {
+      "shortcode": "V7.4.2",
+      "chapter": "V7 Session Management",
+      "level": 1,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "ADMIN",
+        "CRED"
+      ],
+      "test_hint": "Disable user; verify active sessions end"
+    },
+    {
+      "shortcode": "V7.4.3",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "After password/MFA change, option to end other sessions"
+    },
+    {
+      "shortcode": "V7.4.4",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Logout reachable from all authenticated pages"
+    },
+    {
+      "shortcode": "V7.4.5",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "ADMIN",
+        "CRED"
+      ],
+      "test_hint": "Admin can terminate user/all sessions"
+    },
+    {
+      "shortcode": "V7.5.1",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Sensitive attribute changes require full re-auth"
+    },
+    {
+      "shortcode": "V7.5.2",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "View and terminate active sessions"
+    },
+    {
+      "shortcode": "V7.5.3",
+      "chapter": "V7 Session Management",
+      "level": 3,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED",
+        "BIZ"
+      ],
+      "test_hint": "Highly sensitive ops require further authentication"
+    },
+    {
+      "shortcode": "V7.6.1",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "IDP",
+        "WAIT"
+      ],
+      "test_hint": "RP/IdP session lifetime and termination behavior"
+    },
+    {
+      "shortcode": "V7.6.2",
+      "chapter": "V7 Session Management",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Session creation needs user action/consent"
+    },
+    {
+      "shortcode": "V8.1.1",
+      "chapter": "V8 Authorization",
+      "level": 1,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check function/data authorization rules documented"
+    },
+    {
+      "shortcode": "V8.1.2",
+      "chapter": "V8 Authorization",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check field-level rules documented"
+    },
+    {
+      "shortcode": "V8.1.3",
+      "chapter": "V8 Authorization",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check contextual attributes documented"
+    },
+    {
+      "shortcode": "V8.1.4",
+      "chapter": "V8 Authorization",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Check contextual decision rules documented"
+    },
+    {
+      "shortcode": "V8.2.1",
+      "chapter": "V8 Authorization",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "ROLES",
+        "API"
+      ],
+      "test_hint": "Forced browsing/API calls as lower-privileged role"
+    },
+    {
+      "shortcode": "V8.2.2",
+      "chapter": "V8 Authorization",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED2",
+        "API"
+      ],
+      "test_hint": "IDOR/BOLA: access another user's object IDs"
+    },
+    {
+      "shortcode": "V8.2.3",
+      "chapter": "V8 Authorization",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "ROLES",
+        "API"
+      ],
+      "test_hint": "BOPLA: read/write restricted fields"
+    },
+    {
+      "shortcode": "V8.2.4",
+      "chapter": "V8 Authorization",
+      "level": 3,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "DOCS"
+      ],
+      "test_hint": "Vary IP/geo/device (proxy, CDP emulation); expect adaptive response"
+    },
+    {
+      "shortcode": "V8.3.1",
+      "chapter": "V8 Authorization",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "ROLES",
+        "API"
+      ],
+      "test_hint": "Replay privileged requests bypassing UI"
+    },
+    {
+      "shortcode": "V8.3.2",
+      "chapter": "V8 Authorization",
+      "level": 3,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "ADMIN",
+        "CRED"
+      ],
+      "test_hint": "Change role mid-session; check immediate effect"
+    },
+    {
+      "shortcode": "V8.3.3",
+      "chapter": "V8 Authorization",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC",
+        "API"
+      ],
+      "test_hint": "Review subject-based permission propagation"
+    },
+    {
+      "shortcode": "V8.4.1",
+      "chapter": "V8 Authorization",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "TEN",
+        "API"
+      ],
+      "test_hint": "Cross-tenant access attempts"
+    },
+    {
+      "shortcode": "V8.4.2",
+      "chapter": "V8 Authorization",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA",
+        "DOCS"
+      ],
+      "test_hint": "Review admin interface protection layers"
+    },
+    {
+      "shortcode": "V9.1.1",
+      "chapter": "V9 Self-contained Tokens",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Tamper payload/signature of token"
+    },
+    {
+      "shortcode": "V9.1.2",
+      "chapter": "V9 Self-contained Tokens",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "alg=none and algorithm confusion"
+    },
+    {
+      "shortcode": "V9.1.3",
+      "chapter": "V9 Self-contained Tokens",
+      "level": 1,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "OOB"
+      ],
+      "test_hint": "Inject jku/x5u/jwk pointing at attacker host"
+    },
+    {
+      "shortcode": "V9.2.1",
+      "chapter": "V9 Self-contained Tokens",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Expired/not-yet-valid tokens"
+    },
+    {
+      "shortcode": "V9.2.2",
+      "chapter": "V9 Self-contained Tokens",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "IDP"
+      ],
+      "test_hint": "Use ID token where access token expected"
+    },
+    {
+      "shortcode": "V9.2.3",
+      "chapter": "V9 Self-contained Tokens",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "API"
+      ],
+      "test_hint": "Use token minted for another audience"
+    },
+    {
+      "shortcode": "V9.2.4",
+      "chapter": "V9 Self-contained Tokens",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC",
+        "INFRA"
+      ],
+      "test_hint": "Review audience restriction at issuer"
+    },
+    {
+      "shortcode": "V10.1.1",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Inspect browser for exposed access/refresh tokens"
+    },
+    {
+      "shortcode": "V10.1.2",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP",
+        "ATK"
+      ],
+      "test_hint": "Inject foreign code/state into callback"
+    },
+    {
+      "shortcode": "V10.2.1",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Omit/alter state and PKCE in callback"
+    },
+    {
+      "shortcode": "V10.2.2",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Mix-up attack with second authorization server"
+    },
+    {
+      "shortcode": "V10.2.3",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Inspect requested scopes"
+    },
+    {
+      "shortcode": "V10.3.1",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "IDP",
+        "API"
+      ],
+      "test_hint": "Send token with wrong audience to resource server"
+    },
+    {
+      "shortcode": "V10.3.2",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "IDP",
+        "API"
+      ],
+      "test_hint": "Check scope/sub enforcement at resource server"
+    },
+    {
+      "shortcode": "V10.3.3",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Review iss+sub user identification"
+    },
+    {
+      "shortcode": "V10.3.4",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "IDP",
+        "API"
+      ],
+      "test_hint": "Check acr/amr/auth_time enforcement"
+    },
+    {
+      "shortcode": "V10.3.5",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP",
+        "API"
+      ],
+      "test_hint": "Replay token without DPoP/mTLS binding"
+    },
+    {
+      "shortcode": "V10.4.1",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Redirect URI variants; exact match only"
+    },
+    {
+      "shortcode": "V10.4.2",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Reuse authorization code"
+    },
+    {
+      "shortcode": "V10.4.3",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP",
+        "WAIT"
+      ],
+      "test_hint": "Use code after lifetime expires"
+    },
+    {
+      "shortcode": "V10.4.4",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Try implicit and password grants"
+    },
+    {
+      "shortcode": "V10.4.5",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Refresh token replay/rotation"
+    },
+    {
+      "shortcode": "V10.4.6",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Omit PKCE / use plain method"
+    },
+    {
+      "shortcode": "V10.4.7",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "IDP",
+        "OOB"
+      ],
+      "test_hint": "Dynamic client registration abuse"
+    },
+    {
+      "shortcode": "V10.4.8",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Review refresh token absolute expiry"
+    },
+    {
+      "shortcode": "V10.4.9",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED",
+        "IDP"
+      ],
+      "test_hint": "Revoke tokens from AS UI"
+    },
+    {
+      "shortcode": "V10.4.10",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Token request without client authentication"
+    },
+    {
+      "shortcode": "V10.4.11",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Review scope assignment to client"
+    },
+    {
+      "shortcode": "V10.4.12",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Request disallowed response_mode"
+    },
+    {
+      "shortcode": "V10.4.13",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Authorization request without PAR"
+    },
+    {
+      "shortcode": "V10.4.14",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Inspect tokens for sender-constraint"
+    },
+    {
+      "shortcode": "V10.4.15",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Tamper authorization_details"
+    },
+    {
+      "shortcode": "V10.4.16",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Review client authentication methods"
+    },
+    {
+      "shortcode": "V10.5.1",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Replay ID token; nonce check"
+    },
+    {
+      "shortcode": "V10.5.2",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Review user identification claim"
+    },
+    {
+      "shortcode": "V10.5.3",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Review issuer metadata validation"
+    },
+    {
+      "shortcode": "V10.5.4",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "IDP",
+        "SRC"
+      ],
+      "test_hint": "ID token aud must equal client_id"
+    },
+    {
+      "shortcode": "V10.5.5",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Send crafted back-channel logout tokens"
+    },
+    {
+      "shortcode": "V10.6.1",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Request disallowed response types"
+    },
+    {
+      "shortcode": "V10.6.2",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "IDP"
+      ],
+      "test_hint": "Logout request without id_token_hint"
+    },
+    {
+      "shortcode": "V10.7.1",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED",
+        "IDP"
+      ],
+      "test_hint": "Consent prompt for each authorization"
+    },
+    {
+      "shortcode": "V10.7.2",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED",
+        "IDP"
+      ],
+      "test_hint": "Consent screen clarity"
+    },
+    {
+      "shortcode": "V10.7.3",
+      "chapter": "V10 OAuth and OIDC",
+      "level": 2,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED",
+        "IDP"
+      ],
+      "test_hint": "Review/modify/revoke consents"
+    },
+    {
+      "shortcode": "V11.1.1",
+      "chapter": "V11 Cryptography",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Key management policy"
+    },
+    {
+      "shortcode": "V11.1.2",
+      "chapter": "V11 Cryptography",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Cryptographic inventory"
+    },
+    {
+      "shortcode": "V11.1.3",
+      "chapter": "V11 Cryptography",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Cryptographic discovery"
+    },
+    {
+      "shortcode": "V11.1.4",
+      "chapter": "V11 Cryptography",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "PQC migration plan"
+    },
+    {
+      "shortcode": "V11.2.1",
+      "chapter": "V11 Cryptography",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Validated crypto libraries"
+    },
+    {
+      "shortcode": "V11.2.2",
+      "chapter": "V11 Cryptography",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Crypto agility"
+    },
+    {
+      "shortcode": "V11.2.3",
+      "chapter": "V11 Cryptography",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Minimum 128-bit security"
+    },
+    {
+      "shortcode": "V11.2.4",
+      "chapter": "V11 Cryptography",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Constant-time operations"
+    },
+    {
+      "shortcode": "V11.2.5",
+      "chapter": "V11 Cryptography",
+      "level": 3,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "URL",
+        "SRC"
+      ],
+      "test_hint": "Padding-oracle/fail-secure testing"
+    },
+    {
+      "shortcode": "V11.3.1",
+      "chapter": "V11 Cryptography",
+      "level": 1,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "No ECB / weak padding"
+    },
+    {
+      "shortcode": "V11.3.2",
+      "chapter": "V11 Cryptography",
+      "level": 1,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Approved ciphers only"
+    },
+    {
+      "shortcode": "V11.3.3",
+      "chapter": "V11 Cryptography",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Authenticated encryption"
+    },
+    {
+      "shortcode": "V11.3.4",
+      "chapter": "V11 Cryptography",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Nonce/IV uniqueness"
+    },
+    {
+      "shortcode": "V11.3.5",
+      "chapter": "V11 Cryptography",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Encrypt-then-MAC"
+    },
+    {
+      "shortcode": "V11.4.1",
+      "chapter": "V11 Cryptography",
+      "level": 1,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Approved hash functions"
+    },
+    {
+      "shortcode": "V11.4.2",
+      "chapter": "V11 Cryptography",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Password hashing KDF"
+    },
+    {
+      "shortcode": "V11.4.3",
+      "chapter": "V11 Cryptography",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Collision-resistant hashes"
+    },
+    {
+      "shortcode": "V11.4.4",
+      "chapter": "V11 Cryptography",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "KDF parameters"
+    },
+    {
+      "shortcode": "V11.5.1",
+      "chapter": "V11 Cryptography",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "SRC"
+      ],
+      "test_hint": "Sample tokens for entropy; confirm CSPRNG in code"
+    },
+    {
+      "shortcode": "V11.5.2",
+      "chapter": "V11 Cryptography",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "RNG under load"
+    },
+    {
+      "shortcode": "V11.6.1",
+      "chapter": "V11 Cryptography",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Key generation and signatures"
+    },
+    {
+      "shortcode": "V11.6.2",
+      "chapter": "V11 Cryptography",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Key exchange parameters"
+    },
+    {
+      "shortcode": "V11.7.1",
+      "chapter": "V11 Cryptography",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Memory encryption"
+    },
+    {
+      "shortcode": "V11.7.2",
+      "chapter": "V11 Cryptography",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Data minimization in use"
+    },
+    {
+      "shortcode": "V12.1.1",
+      "chapter": "V12 Secure Communication",
+      "level": 1,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "TLS scanner (testssl/sslyze): protocol versions"
+    },
+    {
+      "shortcode": "V12.1.2",
+      "chapter": "V12 Secure Communication",
+      "level": 2,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "TLS scanner: cipher suites"
+    },
+    {
+      "shortcode": "V12.1.3",
+      "chapter": "V12 Secure Communication",
+      "level": 2,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "mTLS client certificate trust validation"
+    },
+    {
+      "shortcode": "V12.1.4",
+      "chapter": "V12 Secure Communication",
+      "level": 3,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "OCSP stapling check"
+    },
+    {
+      "shortcode": "V12.1.5",
+      "chapter": "V12 Secure Communication",
+      "level": 3,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "ECH check"
+    },
+    {
+      "shortcode": "V12.2.1",
+      "chapter": "V12 Secure Communication",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Access over http://; no insecure fallback"
+    },
+    {
+      "shortcode": "V12.2.2",
+      "chapter": "V12 Secure Communication",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Publicly trusted certificate (CDP security state)"
+    },
+    {
+      "shortcode": "V12.3.1",
+      "chapter": "V12 Secure Communication",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "TLS on all inbound/outbound connections"
+    },
+    {
+      "shortcode": "V12.3.2",
+      "chapter": "V12 Secure Communication",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "TLS clients validate certificates"
+    },
+    {
+      "shortcode": "V12.3.3",
+      "chapter": "V12 Secure Communication",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "TLS between internal services"
+    },
+    {
+      "shortcode": "V12.3.4",
+      "chapter": "V12 Secure Communication",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Trusted internal certificates"
+    },
+    {
+      "shortcode": "V12.3.5",
+      "chapter": "V12 Secure Communication",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Strong service-to-service authentication"
+    },
+    {
+      "shortcode": "V13.1.1",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Communication needs documented"
+    },
+    {
+      "shortcode": "V13.1.2",
+      "chapter": "V13 Configuration",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Connection limits documented"
+    },
+    {
+      "shortcode": "V13.1.3",
+      "chapter": "V13 Configuration",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Resource management documented"
+    },
+    {
+      "shortcode": "V13.1.4",
+      "chapter": "V13 Configuration",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Secret rotation schedule documented"
+    },
+    {
+      "shortcode": "V13.2.1",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Backend component authentication"
+    },
+    {
+      "shortcode": "V13.2.2",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Least privilege service accounts"
+    },
+    {
+      "shortcode": "V13.2.3",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "No default credentials"
+    },
+    {
+      "shortcode": "V13.2.4",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Outbound allowlist"
+    },
+    {
+      "shortcode": "V13.2.5",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Server-level allowlist"
+    },
+    {
+      "shortcode": "V13.2.6",
+      "chapter": "V13 Configuration",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Connection configuration followed"
+    },
+    {
+      "shortcode": "V13.3.1",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC",
+        "INFRA"
+      ],
+      "test_hint": "Secrets manager / HSM"
+    },
+    {
+      "shortcode": "V13.3.2",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Least privilege for secrets"
+    },
+    {
+      "shortcode": "V13.3.3",
+      "chapter": "V13 Configuration",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Isolated crypto module"
+    },
+    {
+      "shortcode": "V13.3.4",
+      "chapter": "V13 Configuration",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Secret expiry and rotation"
+    },
+    {
+      "shortcode": "V13.4.1",
+      "chapter": "V13 Configuration",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Probe /.git/ and /.svn/"
+    },
+    {
+      "shortcode": "V13.4.2",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Trigger errors; look for debug output"
+    },
+    {
+      "shortcode": "V13.4.3",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Directory listing probes"
+    },
+    {
+      "shortcode": "V13.4.4",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "HTTP TRACE method"
+    },
+    {
+      "shortcode": "V13.4.5",
+      "chapter": "V13 Configuration",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Probe docs/monitoring endpoints (swagger, actuator, metrics)"
+    },
+    {
+      "shortcode": "V13.4.6",
+      "chapter": "V13 Configuration",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Version info in headers/pages"
+    },
+    {
+      "shortcode": "V13.4.7",
+      "chapter": "V13 Configuration",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Probe .bak/.config/.env files"
+    },
+    {
+      "shortcode": "V14.1.1",
+      "chapter": "V14 Data Protection",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Data classification"
+    },
+    {
+      "shortcode": "V14.1.2",
+      "chapter": "V14 Data Protection",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Protection requirements per level"
+    },
+    {
+      "shortcode": "V14.2.1",
+      "chapter": "V14 Data Protection",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Network log: sensitive data in URL/query"
+    },
+    {
+      "shortcode": "V14.2.2",
+      "chapter": "V14 Data Protection",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA",
+        "SRC"
+      ],
+      "test_hint": "Sensitive data in server caches"
+    },
+    {
+      "shortcode": "V14.2.3",
+      "chapter": "V14 Data Protection",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Inspect third-party requests for sensitive data"
+    },
+    {
+      "shortcode": "V14.2.4",
+      "chapter": "V14 Data Protection",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS",
+        "SRC"
+      ],
+      "test_hint": "Controls per protection level"
+    },
+    {
+      "shortcode": "V14.2.5",
+      "chapter": "V14 Data Protection",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Web cache deception paths (/account/x.css)"
+    },
+    {
+      "shortcode": "V14.2.6",
+      "chapter": "V14 Data Protection",
+      "level": 3,
+      "tinyfish_mode": "AGENT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Web Agent (goal + URL, natural language)",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Check masking/minimal sensitive data in UI"
+    },
+    {
+      "shortcode": "V14.2.7",
+      "chapter": "V14 Data Protection",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS",
+        "INFRA"
+      ],
+      "test_hint": "Retention/deletion"
+    },
+    {
+      "shortcode": "V14.2.8",
+      "chapter": "V14 Data Protection",
+      "level": 3,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "FILES"
+      ],
+      "test_hint": "Upload image with EXIF; download and inspect metadata"
+    },
+    {
+      "shortcode": "V14.3.1",
+      "chapter": "V14 Data Protection",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Inspect DOM/storage after logout"
+    },
+    {
+      "shortcode": "V14.3.2",
+      "chapter": "V14 Data Protection",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Cache-Control: no-store; back-button test"
+    },
+    {
+      "shortcode": "V14.3.3",
+      "chapter": "V14 Data Protection",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED"
+      ],
+      "test_hint": "Inspect local/session storage, IndexedDB, cookies"
+    },
+    {
+      "shortcode": "V15.1.1",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 1,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Remediation timeframes documented"
+    },
+    {
+      "shortcode": "V15.1.2",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "SBOM maintained"
+    },
+    {
+      "shortcode": "V15.1.3",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Resource-intensive functions documented"
+    },
+    {
+      "shortcode": "V15.1.4",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Risky components documented"
+    },
+    {
+      "shortcode": "V15.1.5",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Dangerous functionality documented"
+    },
+    {
+      "shortcode": "V15.2.1",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 1,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "SCA: components within remediation timeframes"
+    },
+    {
+      "shortcode": "V15.2.2",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "DOCS"
+      ],
+      "test_hint": "Load-test documented heavy functions"
+    },
+    {
+      "shortcode": "V15.2.3",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Probe for test/debug/sample content"
+    },
+    {
+      "shortcode": "V15.2.4",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Dependency confusion review"
+    },
+    {
+      "shortcode": "V15.2.5",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC",
+        "INFRA"
+      ],
+      "test_hint": "Isolation of risky components"
+    },
+    {
+      "shortcode": "V15.3.1",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 1,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "API"
+      ],
+      "test_hint": "Inspect API responses for excess fields"
+    },
+    {
+      "shortcode": "V15.3.2",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "OOB"
+      ],
+      "test_hint": "Backend redirect following via OOB server"
+    },
+    {
+      "shortcode": "V15.3.3",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "API"
+      ],
+      "test_hint": "Mass assignment: add isAdmin/role fields"
+    },
+    {
+      "shortcode": "V15.3.4",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "LOGS"
+      ],
+      "test_hint": "Spoof client IP headers; check logs/rate limits"
+    },
+    {
+      "shortcode": "V15.3.5",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "CRED",
+        "API"
+      ],
+      "test_hint": "Type juggling/confusion payloads"
+    },
+    {
+      "shortcode": "V15.3.6",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "__proto__ / constructor payloads"
+    },
+    {
+      "shortcode": "V15.3.7",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL"
+      ],
+      "test_hint": "Duplicate parameters (HPP)"
+    },
+    {
+      "shortcode": "V15.4.1",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Thread-safe shared objects"
+    },
+    {
+      "shortcode": "V15.4.2",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Atomic check and use (TOCTOU)"
+    },
+    {
+      "shortcode": "V15.4.3",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Lock consistency"
+    },
+    {
+      "shortcode": "V15.4.4",
+      "chapter": "V15 Secure Coding and Architecture",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Thread starvation prevention"
+    },
+    {
+      "shortcode": "V16.1.1",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "DOCS"
+      ],
+      "test_hint": "Logging inventory"
+    },
+    {
+      "shortcode": "V16.2.1",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "LOGS"
+      ],
+      "test_hint": "Log metadata"
+    },
+    {
+      "shortcode": "V16.2.2",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Time sync / UTC"
+    },
+    {
+      "shortcode": "V16.2.3",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Log destinations match inventory"
+    },
+    {
+      "shortcode": "V16.2.4",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "LOGS"
+      ],
+      "test_hint": "Common log format"
+    },
+    {
+      "shortcode": "V16.2.5",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "LOGS"
+      ],
+      "test_hint": "Perform sensitive actions; check logs for leaked data"
+    },
+    {
+      "shortcode": "V16.3.1",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "CRED",
+        "LOGS"
+      ],
+      "test_hint": "Successful/failed logins appear in logs"
+    },
+    {
+      "shortcode": "V16.3.2",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "ROLES",
+        "LOGS"
+      ],
+      "test_hint": "Failed authorization logged"
+    },
+    {
+      "shortcode": "V16.3.3",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "LOGS"
+      ],
+      "test_hint": "Trigger validation/anti-automation bypass; check logs"
+    },
+    {
+      "shortcode": "V16.3.4",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "LOGS",
+        "INFRA"
+      ],
+      "test_hint": "Unexpected errors and TLS failures logged"
+    },
+    {
+      "shortcode": "V16.4.1",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY",
+        "LOGS"
+      ],
+      "test_hint": "Inject CRLF/log-forging payloads; inspect logs"
+    },
+    {
+      "shortcode": "V16.4.2",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Log access control/immutability"
+    },
+    {
+      "shortcode": "V16.4.3",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Logs shipped to separate system"
+    },
+    {
+      "shortcode": "V16.5.1",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "BROWSER_SCRIPT",
+      "automatable": "yes",
+      "tinyfish_surface": "TinyFish Browser API (CDP) + your own test script",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Trigger errors; no stack traces/internals"
+    },
+    {
+      "shortcode": "V16.5.2",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Fail a dependency; check graceful degradation"
+    },
+    {
+      "shortcode": "V16.5.3",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 2,
+      "tinyfish_mode": "HYBRID",
+      "automatable": "partial",
+      "tinyfish_surface": "TinyFish Agent/Browser + extra input (OOB server, logs, source, 2nd system)",
+      "required_inputs": [
+        "URL",
+        "PAY"
+      ],
+      "test_hint": "Validation errors must not fail open"
+    },
+    {
+      "shortcode": "V16.5.4",
+      "chapter": "V16 Security Logging and Error Handling",
+      "level": 3,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "SRC"
+      ],
+      "test_hint": "Last-resort error handler"
+    },
+    {
+      "shortcode": "V17.1.1",
+      "chapter": "V17 WebRTC",
+      "level": 2,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "TURN relay to reserved/internal IPs"
+    },
+    {
+      "shortcode": "V17.1.2",
+      "chapter": "V17 WebRTC",
+      "level": 3,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "TURN port exhaustion"
+    },
+    {
+      "shortcode": "V17.2.1",
+      "chapter": "V17 WebRTC",
+      "level": 2,
+      "tinyfish_mode": "REVIEW",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: documentation, source, or infra/config review",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "DTLS key management"
+    },
+    {
+      "shortcode": "V17.2.2",
+      "chapter": "V17 WebRTC",
+      "level": 2,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "DTLS-SRTP suites"
+    },
+    {
+      "shortcode": "V17.2.3",
+      "chapter": "V17 WebRTC",
+      "level": 2,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "SRTP authentication/RTP injection"
+    },
+    {
+      "shortcode": "V17.2.4",
+      "chapter": "V17 WebRTC",
+      "level": 2,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Malformed SRTP handling"
+    },
+    {
+      "shortcode": "V17.2.5",
+      "chapter": "V17 WebRTC",
+      "level": 3,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "SRTP flood"
+    },
+    {
+      "shortcode": "V17.2.6",
+      "chapter": "V17 WebRTC",
+      "level": 3,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "DTLS ClientHello race"
+    },
+    {
+      "shortcode": "V17.2.7",
+      "chapter": "V17 WebRTC",
+      "level": 3,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Recording under SRTP flood"
+    },
+    {
+      "shortcode": "V17.2.8",
+      "chapter": "V17 WebRTC",
+      "level": 3,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "DTLS certificate vs SDP fingerprint"
+    },
+    {
+      "shortcode": "V17.3.1",
+      "chapter": "V17 WebRTC",
+      "level": 2,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Signaling flood"
+    },
+    {
+      "shortcode": "V17.3.2",
+      "chapter": "V17 WebRTC",
+      "level": 2,
+      "tinyfish_mode": "EXTERNAL_TOOL",
+      "automatable": "no",
+      "tinyfish_surface": "Not browser-testable: needs raw-socket/TLS/protocol tooling",
+      "required_inputs": [
+        "INFRA"
+      ],
+      "test_hint": "Malformed signaling"
+    }
+  ]
+}
