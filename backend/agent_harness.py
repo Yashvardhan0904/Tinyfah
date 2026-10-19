@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from google import genai
 from google.genai import types
 from playwright.async_api import Page, CDPSession
-from checks import evaluate_asvs_requirements
+from checks import evaluate_asvs_requirements, deduplicate_findings
 from dotenv import load_dotenv
 
 env_path = Path(__file__).resolve().parent / ".env"
@@ -16,14 +16,14 @@ load_dotenv()
 # Picks up GEMINI_API_KEY from the environment
 gemini_key = os.getenv("GEMINI_API_KEY")
 client = genai.Client(api_key=gemini_key) if gemini_key else None
-MODEL_ID = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL_ID = os.getenv("GEMINI_MODEL", "gemini-3.5-flash")
 
 # --- 1. Pydantic Schemas for Structured Output ---
 class ASVSTestItem(BaseModel):
     requirement_id: str
     chapter_code: str
     chapter_name: str
-    status: str       # "PASS" | "FAIL" | "MANUAL_VERIFY" | "NOT_APPLICABLE"
+    status: str       # "PASS" | "FAIL" | "MANUAL_VERIFY" | "NOT_TESTED" | "NOT_APPLICABLE" | "ERROR"
     severity: str     # "high" | "medium" | "low" | "info"
     evidence: str
     remediation: str
@@ -36,8 +36,8 @@ class FindingItem(BaseModel):
     remediation: str
 
 class GeminiSecurityReport(BaseModel):
-    score: int        # 0 - 100
-    grade: str        # "A" | "B" | "C" | "D" | "F"
+    score: Optional[int] = None       # 0 - 100, or None if not assessable
+    grade: str = "NOT_ASSESSED"       # "A" | "B" | "C" | "D" | "F" | "NOT_ASSESSED"
     summary: str
     asvs_results: List[ASVSTestItem]
     findings: List[FindingItem]
@@ -328,25 +328,28 @@ async def run_gemini_security_harness(
             ),
         )
         report_data = json.loads(final_response.text)
+        report_data["is_ai_synthesized"] = True
+        report_data["ai_assessment_status"] = "SUCCESS"
+        report_data["ai_error"] = None
     except Exception as exc:
-        # Resilient fallback: return baseline structured results
+        # Transparent fallback: return baseline structured results with clear status indicator
         report_data = {
             "score": baseline_result["score"],
             "grade": baseline_result["grade"],
-            "summary": f"OWASP ASVS 5.0.0 automated audit completed across {len(asvs_requirements)} chapter requirements.",
+            "is_ai_synthesized": False,
+            "ai_assessment_status": "FAILED",
+            "ai_error": str(exc),
+            "summary": (
+                f"Automated baseline assessment completed across {len(asvs_requirements)} chapter requirements. "
+                f"(Note: Gemini AI reasoning/synthesis was unavailable [{type(exc).__name__}]; "
+                f"deterministic baseline results returned)."
+            ),
             "asvs_results": baseline_result["asvs_results"],
-            "findings": [
-                {
-                    "severity": f.get("severity", "medium"),
-                    "category": f.get("type", "General"),
-                    "title": f.get("detail", "Security Finding"),
-                    "evidence": f.get("detail", ""),
-                    "remediation": "Refer to OWASP ASVS recommendations for details."
-                }
-                for f in baseline_result["findings"]
-            ],
+            "findings": baseline_result["findings"],
         }
 
+    # Ensure findings are deduplicated with preserved mappings
+    report_data["findings"] = deduplicate_findings(report_data.get("findings", []))
     report_data["agent_trace"] = agent_trace
     report_data["raw_headers"] = doc_headers
     return report_data

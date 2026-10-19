@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, HttpUrl
 from sqlmodel import Session, select
 from database import init_db, get_session, Scan
-from scanner import execute_scan_task
+from scanner import execute_scan_task, validate_target_scope
 from asvs_loader import get_all_chapters, get_test_suite
 
 from tinyfah_loader import get_chapter_requirements, get_all_chapters_summary, get_input_legend, get_mode_legend
@@ -92,10 +92,18 @@ async def start_scan(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_session),
 ):
+    url_str = str(payload.url)
+    valid, scope_err = validate_target_scope(url_str)
+    if not valid:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Target URL is out of scope or invalid: {scope_err}"
+        )
+
     suite_type = payload.suite or "v1"
     # Initialize results with empty traces and findings
     scan = Scan(
-        url=str(payload.url),
+        url=url_str,
         status="queued",
         results={"agent_trace": [], "findings": [], "asvs_results": []}
     )

@@ -64,8 +64,14 @@ async def test_deterministic_v1():
         print(f"Manual Verify: {full_vuln_report['metrics']['manual_verify']}")
         print(f"Executive Summary: {full_vuln_report['summary']}")
 
-        assert full_vuln_report['metrics']['total_evaluated'] == 30
-        assert full_vuln_report['metrics']['failed'] >= 2  # At least V1.2.1 and V1.3.2 or V1.2.2
+        assert full_vuln_report['metrics']['total_requirements'] == 30
+        assert full_vuln_report['metrics']['total_evaluated'] == 3
+        assert full_vuln_report['metrics']['failed'] == 3  # V1.2.1, V1.2.2, V1.3.2
+        assert full_vuln_report['metrics']['not_tested'] == 5  # Untested elements (no markdown, CSV, SVG upload sinks)
+        assert full_vuln_report['metrics']['manual_verify'] == 22
+        assert full_vuln_report['coverage_percentage'] == 10.0
+        assert full_vuln_report['score'] == 25
+        assert full_vuln_report['grade'] == 'F'
 
         print("\n=== ALL DETERMINISTIC HARNESS TESTS PASSED SUCCESSFULLY ===")
 

@@ -15,16 +15,22 @@ class HarnessContext:
 class TestResult:
     shortcode: str
     name: str
-    status: str       # "PASS" | "FAIL" | "MANUAL_VERIFY" | "ERROR" | "SKIPPED"
+    status: str       # "PASS" | "FAIL" | "MANUAL_VERIFY" | "NOT_TESTED" | "ERROR"
     severity: str     # "high" | "medium" | "low" | "info"
     evidence: str
-    remediation: str
+    remediation: str = ""
     test_hint: str = ""
     required_inputs: List[str] = field(default_factory=list)
     chapter: str = ""
     level: int = 1
     tinyfish_mode: str = "BROWSER_SCRIPT"
     duration_ms: int = 0
+    target_url: str = ""
+    http_status: Optional[int] = None
+    observations: str = ""
+    expected_behavior: str = ""
+    limitations: str = ""
+    execution_error: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -42,6 +48,12 @@ class TestResult:
             "level": self.level,
             "tinyfish_mode": self.tinyfish_mode,
             "duration_ms": self.duration_ms,
+            "target_url": self.target_url,
+            "http_status": self.http_status,
+            "observations": self.observations or self.evidence,
+            "expected_behavior": self.expected_behavior,
+            "limitations": self.limitations,
+            "execution_error": self.execution_error,
         }
 
 TestFunction = Callable[[HarnessContext], Awaitable[TestResult]]

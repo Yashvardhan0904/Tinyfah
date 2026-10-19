@@ -42,16 +42,77 @@ def save_live_trace(scan_id: int, trace: list):
             db.add(scan)
             db.commit()
 
+import urllib.parse
+import ipaddress
+
+BLOCKED_METADATA_HOSTS = {
+    "169.254.169.254",          # AWS / GCP / Azure link-local metadata
+    "metadata.google.internal",
+    "instance-data",
+}
+
+def validate_target_scope(url_str: str) -> tuple[bool, Optional[str]]:
+    """
+    Validates whether a target URL is in scope for security scanning.
+    Rejects:
+    - Non-HTTP/HTTPS schemes (e.g. ftp://, file://, javascript:, gopher://)
+    - Empty or malformed hostnames
+    - Cloud metadata IP/endpoints or link-local addresses
+    """
+    try:
+        parsed = urllib.parse.urlparse(str(url_str).strip())
+        scheme = (parsed.scheme or "").lower()
+        if scheme not in ["http", "https"]:
+            return False, f"Unsupported scheme '{scheme}'. Only http:// and https:// URLs are permitted."
+
+        hostname = (parsed.hostname or "").strip().lower()
+        if not hostname:
+            return False, "Target URL is missing a valid hostname."
+
+        if hostname in BLOCKED_METADATA_HOSTS:
+            return False, f"Target host '{hostname}' is blocked (cloud metadata endpoint)."
+
+        # Reject link-local IPs
+        try:
+            ip = ipaddress.ip_address(hostname)
+            if ip.is_link_local:
+                return False, f"Target IP '{hostname}' is out of scope (link-local address)."
+        except ValueError:
+            pass  # Not an IP literal, it's a domain name
+
+        return True, None
+    except Exception as e:
+        return False, f"Invalid target URL: {str(e)}"
+
 async def execute_scan_task(
     scan_id: int, 
     target_url: str, 
-    suite: str = "chapter_sample",
+    suite: str = "v1",
     test_id: Optional[str] = None,
 ):
     headers = {"X-API-Key": TINYFISH_API_KEY, "Content-Type": "application/json"}
     session_id = None
     cdp_issues = []
     doc_headers = {}
+
+    # Target Scope Validation
+    valid, scope_err = validate_target_scope(target_url)
+    if not valid:
+        update_scan_status(scan_id, "failed", f"Out-of-scope target rejected: {scope_err}")
+        with Session(engine) as db:
+            scan = db.get(Scan, scan_id)
+            if scan:
+                scan.score = None
+                scan.grade = "NOT_ASSESSED"
+                scan.results = {
+                    "error": f"Target URL out of scope: {scope_err}",
+                    "findings": [],
+                    "asvs_results": [],
+                }
+                flag_modified(scan, "results")
+                db.add(scan)
+                db.commit()
+        return
 
     # Check for Chapter V1 Deterministic Harness execution
     if suite in ["v1", "chapter_v1"] or test_id:
@@ -67,9 +128,9 @@ async def execute_scan_task(
             with Session(engine) as db:
                 scan = db.get(Scan, scan_id)
                 if scan:
-                    scan.status = "completed"
-                    scan.score = report.get("score", 0)
-                    scan.grade = report.get("grade", "F")
+                    scan.status = report.get("scan_status", "completed")
+                    scan.score = report.get("score")
+                    scan.grade = report.get("grade", "NOT_ASSESSED")
                     scan.results = report
                     flag_modified(scan, "results")
                     db.add(scan)
@@ -80,6 +141,8 @@ async def execute_scan_task(
                 if scan:
                     scan.status = "failed"
                     scan.error = str(exc)
+                    scan.score = None
+                    scan.grade = "NOT_ASSESSED"
                     db.add(scan)
                     db.commit()
         return
@@ -141,9 +204,9 @@ async def execute_scan_task(
             with Session(engine) as db:
                 scan = db.get(Scan, scan_id)
                 if scan:
-                    scan.status = "completed"
-                    scan.score = report.get("score", 0)
-                    scan.grade = report.get("grade", "F")
+                    scan.status = report.get("scan_status", "completed")
+                    scan.score = report.get("score")
+                    scan.grade = report.get("grade", "NOT_ASSESSED")
                     scan.results = report
                     flag_modified(scan, "results")
                     db.add(scan)
@@ -155,6 +218,8 @@ async def execute_scan_task(
                 if scan:
                     scan.status = "failed"
                     scan.error = str(exc)
+                    scan.score = None
+                    scan.grade = "NOT_ASSESSED"
                     db.add(scan)
                     db.commit()
 

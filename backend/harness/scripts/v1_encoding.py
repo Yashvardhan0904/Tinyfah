@@ -26,9 +26,11 @@ async def test_v1_2_1(ctx: HarnessContext) -> TestResult:
         f"?{urllib.parse.urlencode(test_params)}"
     )
 
+    http_status = None
     try:
         # Load probe URL and check reflection
         response = await page.goto(test_url, wait_until="domcontentloaded", timeout=12000)
+        http_status = response.status if response else None
         raw_http_body = (await response.text()) if response else ""
         dom_text = await page.content()
 
@@ -78,6 +80,10 @@ async def test_v1_2_1(ctx: HarnessContext) -> TestResult:
                 level=ctx.metadata.get("level", 1),
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                http_status=http_status,
+                observations=f"Canary probe '{probe_val}' reflected unescaped into response body or DOM attributes.",
+                expected_behavior="Sensitive characters (<, >, \", ') must be converted to HTML entities (&lt;, &gt;, &quot;).",
             )
         elif is_encoded:
             evidence = "Canary probe was safely encoded into HTML entities (&lt;, &gt;, &quot;) before DOM rendering."
@@ -94,22 +100,32 @@ async def test_v1_2_1(ctx: HarnessContext) -> TestResult:
                 level=ctx.metadata.get("level", 1),
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                http_status=http_status,
+                observations=f"Canary probe reflected safely as '{encoded_bracket}' with HTML entity escaping.",
+                expected_behavior="User input reflected in HTML elements or attributes must be safely HTML entity encoded.",
             )
         else:
+            # Never assign PASS without sufficient evidence when no reflection sink was observed!
             evidence = "Injected parameter not reflected in page body or attributes (no reflection sink found on target URL)."
             return TestResult(
                 shortcode="V1.2.1",
                 name="HTML & Attribute Output Encoding",
-                status="PASS",
+                status="NOT_TESTED",
                 severity="info",
                 evidence=evidence,
-                remediation="No reflected output vulnerability detected on target landing page.",
+                remediation="Verify output encoding on application pages with active user input reflection sinks.",
                 test_hint=ctx.metadata.get("test_hint", "Inject HTML/attr/CSS/header payloads; inspect resulting DOM and headers"),
                 required_inputs=ctx.metadata.get("required_inputs", ["URL", "PAY"]),
                 chapter=ctx.metadata.get("chapter", "V1 Encoding and Sanitization"),
                 level=ctx.metadata.get("level", 1),
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                http_status=http_status,
+                observations="Query parameters 'q' and 'test' were sent to target URL, but their values were not reflected in the response body or DOM attributes.",
+                expected_behavior="Target landing page reflects query parameter or user input into HTML body/attribute context.",
+                limitations="Could not locate an active reflection sink on the public landing page to verify dynamic output encoding.",
             )
     except Exception as e:
         duration = int((time.time() - start_time) * 1000)
@@ -124,6 +140,9 @@ async def test_v1_2_1(ctx: HarnessContext) -> TestResult:
             required_inputs=ctx.metadata.get("required_inputs", []),
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
+            target_url=target_url,
+            http_status=http_status,
+            execution_error=str(e),
         )
 
 
@@ -143,8 +162,10 @@ async def test_v1_2_2(ctx: HarnessContext) -> TestResult:
         f"?redirect={urllib.parse.quote(probe_scheme)}&next={urllib.parse.quote(probe_scheme)}"
     )
 
+    http_status = None
     try:
-        await page.goto(test_url, wait_until="domcontentloaded", timeout=12000)
+        response = await page.goto(test_url, wait_until="domcontentloaded", timeout=12000)
+        http_status = response.status if response else None
 
         # Inspect DOM for dangerous scheme execution sinks in href, src, action
         scheme_leaks = await page.evaluate("""() => {
@@ -159,10 +180,20 @@ async def test_v1_2_2(ctx: HarnessContext) -> TestResult:
             return dangerous;
         }""")
 
+        # Check if the probe was reflected in hyperlinks
+        probe_reflected = await page.evaluate(f"""() => {{
+            const links = document.querySelectorAll('a[href], form[action]');
+            for (const el of links) {{
+                const val = el.getAttribute('href') || el.getAttribute('action') || '';
+                if (val.includes('tf_probe')) return true;
+            }}
+            return false;
+        }}""")
+
         duration = int((time.time() - start_time) * 1000)
 
         if scheme_leaks:
-            evidence = f"Found {len(scheme_leaks)} DOM elements with unvalidated javascript:/data: scheme execution: {scheme_leaks}"
+            evidence = f"Found {len(scheme_leaks)} DOM element(s) with unvalidated javascript:/data: scheme execution: {scheme_leaks}"
             return TestResult(
                 shortcode="V1.2.2",
                 name="URL Parameter Encoding & Protocol Schemes",
@@ -176,9 +207,13 @@ async def test_v1_2_2(ctx: HarnessContext) -> TestResult:
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                http_status=http_status,
+                observations=f"Discovered active javascript: pseudo-protocol destinations in document links: {scheme_leaks}",
+                expected_behavior="Hyperlink destinations must strictly disallow javascript: and data: schemes.",
             )
-        else:
-            evidence = "No unvalidated javascript: or data: schemes detected in DOM hyperlinks or action attributes."
+        elif probe_reflected:
+            evidence = "Injected redirect parameter was reflected in link attributes with safe URL encoding or protocol scheme enforcement."
             return TestResult(
                 shortcode="V1.2.2",
                 name="URL Parameter Encoding & Protocol Schemes",
@@ -192,6 +227,31 @@ async def test_v1_2_2(ctx: HarnessContext) -> TestResult:
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                http_status=http_status,
+                observations="Injected parameter was handled and sanitized without permitting javascript: execution.",
+                expected_behavior="URL parameters used in link destinations must be safely scheme-validated.",
+            )
+        else:
+            evidence = "No unvalidated javascript: or data: schemes detected in DOM, and no URL parameter reflection sink was found on this landing page."
+            return TestResult(
+                shortcode="V1.2.2",
+                name="URL Parameter Encoding & Protocol Schemes",
+                status="NOT_TESTED",
+                severity="info",
+                evidence=evidence,
+                remediation="Validate URL parameters on redirect or navigation endpoints.",
+                test_hint=ctx.metadata.get("test_hint", "Inject javascript:/data: into URL-building params; check encoding"),
+                required_inputs=ctx.metadata.get("required_inputs", ["URL", "PAY"]),
+                chapter="V1 Encoding and Sanitization",
+                level=1,
+                tinyfish_mode="BROWSER_SCRIPT",
+                duration_ms=duration,
+                target_url=target_url,
+                http_status=http_status,
+                observations="No links with injected redirect parameter were reflected on target page.",
+                expected_behavior="Target page reflects or uses destination URL parameter.",
+                limitations="No dynamic URL reflection sink was present on the landing page to test URL encoding.",
             )
     except Exception as e:
         duration = int((time.time() - start_time) * 1000)
@@ -204,6 +264,9 @@ async def test_v1_2_2(ctx: HarnessContext) -> TestResult:
             remediation="Ensure target server is reachable.",
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
+            target_url=target_url,
+            http_status=http_status,
+            execution_error=str(e),
         )
 
 
@@ -223,8 +286,10 @@ async def test_v1_2_3(ctx: HarnessContext) -> TestResult:
         f"?data={urllib.parse.quote(breakout_payload)}"
     )
 
+    http_status = None
     try:
-        await page.goto(test_url, wait_until="domcontentloaded", timeout=12000)
+        response = await page.goto(test_url, wait_until="domcontentloaded", timeout=12000)
+        http_status = response.status if response else None
 
         # Inspect if breakout succeeded into a new DOM node
         breakout_detected = await page.evaluate("""() => {
@@ -244,10 +309,16 @@ async def test_v1_2_3(ctx: HarnessContext) -> TestResult:
             return issues;
         }""")
 
+        # Check if probe was reflected in any script
+        probe_in_scripts = await page.evaluate("""() => {
+            const scripts = Array.from(document.querySelectorAll('script:not([src])'));
+            return scripts.some(s => (s.textContent || '').includes('tf_breakout_test'));
+        }""")
+
         duration = int((time.time() - start_time) * 1000)
 
         if breakout_detected or dangerous_inline_scripts:
-            evidence = f"Script context breakout detected: Injected </script> parsed as DOM element or unescaped in script tag."
+            evidence = "Script context breakout detected: Injected </script> parsed as DOM element or unescaped in script tag."
             return TestResult(
                 shortcode="V1.2.3",
                 name="JavaScript Context Encoding & Script Breakouts",
@@ -261,9 +332,13 @@ async def test_v1_2_3(ctx: HarnessContext) -> TestResult:
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                http_status=http_status,
+                observations="Breakout payload broke out of JavaScript context into DOM structure.",
+                expected_behavior="Data embedded in script blocks must escape </script> sequences.",
             )
-        else:
-            evidence = "Script breakout payload safely handled; no unescaped JavaScript context reflections detected."
+        elif probe_in_scripts:
+            evidence = "Script breakout payload safely escaped inside inline JavaScript context."
             return TestResult(
                 shortcode="V1.2.3",
                 name="JavaScript Context Encoding & Script Breakouts",
@@ -277,6 +352,31 @@ async def test_v1_2_3(ctx: HarnessContext) -> TestResult:
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                http_status=http_status,
+                observations="Parameter reflected inside inline script with safe Unicode/slash escaping.",
+                expected_behavior="Injected script breakout tags must be neutralized.",
+            )
+        else:
+            evidence = "No reflection of injected parameters detected inside inline JavaScript contexts on target landing page."
+            return TestResult(
+                shortcode="V1.2.3",
+                name="JavaScript Context Encoding & Script Breakouts",
+                status="NOT_TESTED",
+                severity="info",
+                evidence=evidence,
+                remediation="Test JS context encoding on endpoints that serialize state into window variables.",
+                test_hint=ctx.metadata.get("test_hint", "Inject quote/script breakouts into JS and JSON contexts"),
+                required_inputs=ctx.metadata.get("required_inputs", ["URL", "PAY"]),
+                chapter="V1 Encoding and Sanitization",
+                level=1,
+                tinyfish_mode="BROWSER_SCRIPT",
+                duration_ms=duration,
+                target_url=target_url,
+                http_status=http_status,
+                observations="Probe parameter 'data' was not reflected into any inline script tags or JSON state.",
+                expected_behavior="Page reflects user input into client-side JavaScript execution context.",
+                limitations="No dynamic JS reflection sink was present on this page to evaluate script breakouts.",
             )
     except Exception as e:
         duration = int((time.time() - start_time) * 1000)
@@ -289,6 +389,9 @@ async def test_v1_2_3(ctx: HarnessContext) -> TestResult:
             remediation="Ensure target server is reachable.",
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
+            target_url=target_url,
+            http_status=http_status,
+            execution_error=str(e),
         )
 
 
@@ -299,9 +402,10 @@ async def test_v1_2_10(ctx: HarnessContext) -> TestResult:
     """
     start_time = time.time()
     page = ctx.page
+    target_url = ctx.target_url
 
+    http_status = None
     try:
-        # Check if the page has export triggers or tabular exports
         export_audit = await page.evaluate("""() => {
             const exportElements = Array.from(document.querySelectorAll('a, button, input[type="submit"]'))
                 .filter(el => {
@@ -318,36 +422,44 @@ async def test_v1_2_10(ctx: HarnessContext) -> TestResult:
         duration = int((time.time() - start_time) * 1000)
 
         if export_audit.get("hasExport"):
-            evidence = f"Export functionality detected: {export_audit.get('exportElements')}. Values starting with =,+,-,@ require prefix neutralization."
+            evidence = f"Found potential export trigger(s): {export_audit['exportElements']}. Formula injection verification recommended."
             return TestResult(
                 shortcode="V1.2.10",
                 name="Formula and CSV Injection Defense",
                 status="MANUAL_VERIFY",
                 severity="medium",
                 evidence=evidence,
-                remediation="Ensure CSV/spreadsheet generator prefixes formula characters (=, +, -, @, \\t, \\r) with a single quote (') to neutralize execution in Excel/Calc.",
+                remediation="Ensure all fields exported to CSV/Excel prepend a tab, space, or apostrophe (') to any cell beginning with '=', '+', '-', or '@'.",
                 test_hint=ctx.metadata.get("test_hint", "Store =,+,-,@ values; export CSV/XLSX and inspect first characters"),
                 required_inputs=ctx.metadata.get("required_inputs", ["CRED", "PAY"]),
                 chapter="V1 Encoding and Sanitization",
                 level=3,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                observations=f"Export triggers identified on page: {export_audit['exportElements']}.",
+                expected_behavior="Exported spreadsheet files must neutralize leading formula control characters.",
+                limitations="Actual CSV download generation requires authenticated form submissions.",
             )
         else:
-            evidence = "No CSV or spreadsheet export triggers identified on inspected surface."
+            evidence = "No CSV or spreadsheet export triggers identified on inspected landing page surface."
             return TestResult(
                 shortcode="V1.2.10",
                 name="Formula and CSV Injection Defense",
-                status="PASS",
+                status="NOT_TESTED",
                 severity="info",
                 evidence=evidence,
-                remediation="No immediate CSV export risk observed on current page.",
+                remediation="If CSV/spreadsheet export features exist in internal application workflows, verify formula neutralization.",
                 test_hint=ctx.metadata.get("test_hint", "Store =,+,-,@ values; export CSV/XLSX and inspect first characters"),
                 required_inputs=ctx.metadata.get("required_inputs", ["CRED", "PAY"]),
                 chapter="V1 Encoding and Sanitization",
                 level=3,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                observations="No export buttons, CSV links, or spreadsheet download actions detected on page.",
+                expected_behavior="Target page contains spreadsheet export functionality.",
+                limitations="CSV export feature not present on public landing page.",
             )
     except Exception as e:
         duration = int((time.time() - start_time) * 1000)
@@ -360,6 +472,8 @@ async def test_v1_2_10(ctx: HarnessContext) -> TestResult:
             remediation="Ensure target server is reachable.",
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
+            target_url=target_url,
+            execution_error=str(e),
         )
 
 
@@ -370,6 +484,7 @@ async def test_v1_3_1(ctx: HarnessContext) -> TestResult:
     """
     start_time = time.time()
     page = ctx.page
+    target_url = ctx.target_url
 
     try:
         editor_audit = await page.evaluate("""() => {
@@ -399,22 +514,30 @@ async def test_v1_3_1(ctx: HarnessContext) -> TestResult:
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                observations=f"Rich-text editor containers present on page: {editor_audit['tags']}.",
+                expected_behavior="Rich-text content must be sanitized with strict HTML allowlists.",
+                limitations="Manual verification required to inject and persist rich-text formatting payloads.",
             )
         else:
             evidence = "No active WYSIWYG or contenteditable rich-text elements found on target interface."
             return TestResult(
                 shortcode="V1.3.1",
                 name="Rich-Text & HTML Input Sanitization",
-                status="PASS",
+                status="NOT_TESTED",
                 severity="info",
                 evidence=evidence,
-                remediation="No rich-text editor attack surface detected on inspected page.",
+                remediation="Ensure rich-text sanitization is tested on administrative or comment posting pages with WYSIWYG editors.",
                 test_hint=ctx.metadata.get("test_hint", "XSS payloads through rich-text/WYSIWYG editors"),
                 required_inputs=ctx.metadata.get("required_inputs", ["CRED", "PAY"]),
                 chapter="V1 Encoding and Sanitization",
                 level=1,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                observations="No contenteditable elements, TinyMCE, Quill, or CKEditor instances detected.",
+                expected_behavior="Page contains rich-text/WYSIWYG editor elements.",
+                limitations="No rich-text input interface on public landing page.",
             )
     except Exception as e:
         duration = int((time.time() - start_time) * 1000)
@@ -427,6 +550,8 @@ async def test_v1_3_1(ctx: HarnessContext) -> TestResult:
             remediation="Ensure target server is reachable.",
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
+            target_url=target_url,
+            execution_error=str(e),
         )
 
 
@@ -437,6 +562,7 @@ async def test_v1_3_4(ctx: HarnessContext) -> TestResult:
     """
     start_time = time.time()
     page = ctx.page
+    target_url = ctx.target_url
 
     try:
         svg_audit = await page.evaluate("""() => {
@@ -473,14 +599,17 @@ async def test_v1_3_4(ctx: HarnessContext) -> TestResult:
                 level=2,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                observations=f"Found scriptable tags in SVG elements on the page.",
+                expected_behavior="SVG elements must strip script tags, handlers, and foreignObjects.",
             )
         elif svg_audit.get("fileUploads"):
-            evidence = f"Found file upload inputs ({svg_audit['fileUploads']}). SVG uploads must be explicitly validated."
+            evidence = f"Found file upload inputs ({svg_audit['fileUploads']}). SVG uploads must be explicitly validated and sanitized."
             return TestResult(
                 shortcode="V1.3.4",
                 name="SVG Content Sanitization",
                 status="MANUAL_VERIFY",
-                severity="info",
+                severity="medium",
                 evidence=evidence,
                 remediation="Ensure file upload pipelines sanitize incoming SVG files and strip executable elements.",
                 test_hint=ctx.metadata.get("test_hint", "Upload SVG with script/foreignObject; open it directly"),
@@ -489,22 +618,30 @@ async def test_v1_3_4(ctx: HarnessContext) -> TestResult:
                 level=2,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                observations=f"File upload inputs found on target page: {svg_audit['fileUploads']}.",
+                expected_behavior="Uploaded SVG files must be sanitized before being stored or served.",
+                limitations="Upload and rendering of a test SVG payload requires authenticated multipart submission.",
             )
         else:
-            evidence = f"Inspected {svg_audit.get('totalSvg', 0)} inline SVG element(s); no embedded scripts or foreignObjects found."
+            evidence = f"Inspected {svg_audit.get('totalSvg', 0)} static SVG element(s); no user-controllable SVG upload sinks present on landing page."
             return TestResult(
                 shortcode="V1.3.4",
                 name="SVG Content Sanitization",
-                status="PASS",
+                status="NOT_TESTED",
                 severity="info",
                 evidence=evidence,
-                remediation="SVG elements are free of scriptable nodes.",
+                remediation="Audit file upload workflows that accept SVG avatars or graphics.",
                 test_hint=ctx.metadata.get("test_hint", "Upload SVG with script/foreignObject; open it directly"),
                 required_inputs=ctx.metadata.get("required_inputs", ["CRED", "FILES"]),
                 chapter="V1 Encoding and Sanitization",
                 level=2,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                observations=f"Page has {svg_audit.get('totalSvg', 0)} static SVG elements and no file upload fields.",
+                expected_behavior="Target page supports user-supplied SVG uploads.",
+                limitations="Requirement ASVS V1.3.4 requires user-supplied SVG upload endpoints.",
             )
     except Exception as e:
         duration = int((time.time() - start_time) * 1000)
@@ -517,6 +654,8 @@ async def test_v1_3_4(ctx: HarnessContext) -> TestResult:
             remediation="Ensure target server is reachable.",
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
+            target_url=target_url,
+            execution_error=str(e),
         )
 
 
@@ -527,9 +666,9 @@ async def test_v1_3_5(ctx: HarnessContext) -> TestResult:
     """
     start_time = time.time()
     page = ctx.page
+    target_url = ctx.target_url
 
     try:
-        # Check for client-side markdown parsers (marked, markdown-it, showdown)
         md_audit = await page.evaluate("""() => {
             const hasMarked = typeof window.marked !== 'undefined';
             const hasShowdown = typeof window.showdown !== 'undefined';
@@ -556,22 +695,30 @@ async def test_v1_3_5(ctx: HarnessContext) -> TestResult:
                 level=2,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                observations=f"Markdown rendering library '{md_audit['detectedParser']}' found in global window context.",
+                expected_behavior="Client-side Markdown parser must sanitize raw HTML syntax and javascript: schemes.",
+                limitations="Manual verification required with interactive Markdown editing fields.",
             )
         else:
-            evidence = "No unvalidated client-side Markdown/BBCode parsers identified on inspected page."
+            evidence = "No client-side Markdown or BBCode input sinks detected on public landing page."
             return TestResult(
                 shortcode="V1.3.5",
                 name="Markdown & Formatted Input Sanitization",
-                status="PASS",
+                status="NOT_TESTED",
                 severity="info",
                 evidence=evidence,
-                remediation="No active client-side markdown script injection sinks detected.",
+                remediation="Verify Markdown and BBCode sanitization on documentation, blog, or forum editors.",
                 test_hint=ctx.metadata.get("test_hint", "Script payloads in Markdown/BBCode/CSS/XSL input"),
                 required_inputs=ctx.metadata.get("required_inputs", ["CRED", "PAY"]),
                 chapter="V1 Encoding and Sanitization",
                 level=2,
                 tinyfish_mode="BROWSER_SCRIPT",
                 duration_ms=duration,
+                target_url=target_url,
+                observations="No Markdown parsing libraries (marked, showdown, markdown-it) detected in window context.",
+                expected_behavior="Page contains Markdown/BBCode parsing features.",
+                limitations="No Markdown parser attack surface detected on inspected landing page.",
             )
     except Exception as e:
         duration = int((time.time() - start_time) * 1000)
@@ -580,21 +727,23 @@ async def test_v1_3_5(ctx: HarnessContext) -> TestResult:
             name="Markdown & Formatted Input Sanitization",
             status="ERROR",
             severity="info",
-            evidence=f"Error checking markdown sanitization: {str(e)}",
+            evidence=f"Error inspecting Markdown parsers: {str(e)}",
             remediation="Ensure target server is reachable.",
             chapter="V1 Encoding and Sanitization",
             duration_ms=duration,
+            target_url=target_url,
+            execution_error=str(e),
         )
 
 
 async def evaluate_v1_passive_and_review_requirements(
     all_v1_reqs: List[Dict[str, Any]],
     ctx: HarnessContext,
-    executed_results: Dict[str, TestResult]
+    executed_results: Dict[str, TestResult],
 ) -> List[TestResult]:
     """
-    Evaluates all other V1 requirements (HYBRID and REVIEW) using observable browser heuristics
-    and Tinyfah.json metadata.
+    Evaluates remaining Chapter V1 requirements using static DOM/code heuristics
+    or assigns structured manual verification guidance.
     """
     page = ctx.page
     headers = {k.lower(): v for k, v in ctx.doc_headers.items()}
@@ -642,6 +791,9 @@ async def evaluate_v1_passive_and_review_requirements(
                     chapter="V1 Encoding and Sanitization",
                     level=level,
                     tinyfish_mode=mode,
+                    target_url=ctx.target_url,
+                    observations="Inline script contains eval() or new Function() call.",
+                    expected_behavior="Application code must not invoke dynamic string evaluation.",
                 )
             else:
                 res = TestResult(
@@ -649,43 +801,37 @@ async def evaluate_v1_passive_and_review_requirements(
                     name=desc[:50] or "Avoid Dynamic Code Execution",
                     status="PASS",
                     severity="info",
-                    evidence="No dynamic eval() or Function constructor detected in inspected inline scripts.",
+                    evidence="No dynamic eval() or Function constructor detected in inspected inline script tags.",
                     remediation="Maintain ban on dynamic code execution.",
                     test_hint=hint,
                     required_inputs=inputs,
                     chapter="V1 Encoding and Sanitization",
                     level=level,
                     tinyfish_mode=mode,
+                    target_url=ctx.target_url,
+                    observations="Inspected inline script elements; no dynamic code evaluation found.",
+                    expected_behavior="Inline scripts must not execute eval() or new Function().",
+                    limitations="Evaluated inline scripts; external JavaScript bundles require source code review.",
                 )
         elif sc == "V1.1.1":
-            if has_utf8:
-                res = TestResult(
-                    shortcode=sc,
-                    name="Canonical Input Decoding & Charset",
-                    status="PASS",
-                    severity="info",
-                    evidence=f"Explicit Content-Type header with character set configured: '{content_type}'.",
-                    remediation="Confirm server decodes incoming payloads into canonical form exactly once.",
-                    test_hint=hint,
-                    required_inputs=inputs,
-                    chapter="V1 Encoding and Sanitization",
-                    level=level,
-                    tinyfish_mode=mode,
-                )
-            else:
-                res = TestResult(
-                    shortcode=sc,
-                    name="Canonical Input Decoding & Charset",
-                    status="MANUAL_VERIFY",
-                    severity="low",
-                    evidence=f"Content-Type '{content_type}' lacks explicit charset specification. Double-decode verification recommended.",
-                    remediation="Specify explicit UTF-8 charset in Content-Type header and ensure single canonical decode pass.",
-                    test_hint=hint,
-                    required_inputs=inputs,
-                    chapter="V1 Encoding and Sanitization",
-                    level=level,
-                    tinyfish_mode=mode,
-                )
+            # Explicit charset in Content-Type is relevant, but canonical decoding requires manual/backend review
+            res = TestResult(
+                shortcode=sc,
+                name="Canonical Input Decoding & Charset",
+                status="MANUAL_VERIFY",
+                severity="info",
+                evidence=f"Content-Type is '{content_type}'. Canonical single-pass input decoding must be verified in server-side request pipelines.",
+                remediation="Specify explicit UTF-8 charset in Content-Type header and verify server decodes incoming payloads into canonical form exactly once.",
+                test_hint=hint,
+                required_inputs=inputs,
+                chapter="V1 Encoding and Sanitization",
+                level=level,
+                tinyfish_mode=mode,
+                target_url=ctx.target_url,
+                observations=f"Content-Type: '{content_type}'.",
+                expected_behavior="Server decodes all inputs to canonical representation exactly once before validation.",
+                limitations="Server-side canonical decoding cannot be definitively proven by passive response inspection alone.",
+            )
         else:
             # Standard structured manual verification item
             res = TestResult(
@@ -700,6 +846,9 @@ async def evaluate_v1_passive_and_review_requirements(
                 chapter="V1 Encoding and Sanitization",
                 level=level,
                 tinyfish_mode=mode,
+                target_url=ctx.target_url,
+                expected_behavior=desc,
+                limitations=f"Requires {', '.join(inputs)} or architecture documentation.",
             )
 
         results.append(res)
