@@ -35,6 +35,18 @@ def test_scope_rejects_empty_allowlist():
         scope.validate("https://staging.example.com")
 
 
+def test_allowlist_entry_accepts_full_url():
+    scope = Scope.from_hosts(["https://staging.example.com/"])
+    assert scope.validate("https://staging.example.com/login") == (
+        "https://staging.example.com/login"
+    )
+
+
+def test_allowlist_entry_normalizes_wildcard_url():
+    scope = Scope.from_hosts(["https://*.example.com:8443/"])
+    assert scope.validate("https://app.example.com/")
+
+
 @pytest.mark.parametrize(
     "url",
     [

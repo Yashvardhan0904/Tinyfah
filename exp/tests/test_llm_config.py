@@ -96,6 +96,7 @@ def test_missing_primary_key_falls_through_to_valid_fallback(monkeypatch):
         monkeypatch,
         LLM_PROVIDER="groq",
         LLM_MODEL="llama-3.3-70b-versatile",
+        LLM_API_KEY="",
         LLM_FALLBACKS=("ollama/qwen2.5:14b",),
         GROQ_API_KEY="",
     )
@@ -107,11 +108,37 @@ def test_no_usable_provider_raises(monkeypatch):
         monkeypatch,
         LLM_PROVIDER="groq",
         LLM_MODEL="llama-3.3-70b-versatile",
+        LLM_API_KEY="",
         LLM_FALLBACKS=(),
         GROQ_API_KEY="",
     )
     with pytest.raises(LLMConfigurationError):
         get_chain()
+
+
+def test_llm_api_key_overrides_provider_key(monkeypatch):
+    _set_config(
+        monkeypatch,
+        LLM_PROVIDER="groq",
+        LLM_MODEL="llama-3.3-70b-versatile",
+        LLM_API_KEY="override-key",
+        GROQ_API_KEY="",
+    )
+    chain = get_chain()
+    assert chain[0].label == "groq/llama-3.3-70b-versatile"
+    assert chain[0].api_key == "override-key"
+
+
+def test_provider_specific_key_used_without_override(monkeypatch):
+    _set_config(
+        monkeypatch,
+        LLM_PROVIDER="groq",
+        LLM_MODEL="llama-3.3-70b-versatile",
+        LLM_API_KEY="",
+        GROQ_API_KEY="provider-key",
+    )
+    chain = get_chain()
+    assert chain[0].api_key == "provider-key"
 
 
 def test_invalid_fallback_entries_are_ignored(monkeypatch):

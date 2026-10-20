@@ -55,7 +55,7 @@ class BrowserSession:
                     )
 
 
-def _install_scope_guard(context: BrowserContext, scope: Scope) -> None:
+async def _install_scope_guard(context: BrowserContext, scope: Scope) -> None:
     async def guard(route: Route, request: Request) -> None:
         if request.is_navigation_request() or request.resource_type in {"xhr", "fetch"}:
             try:
@@ -65,7 +65,7 @@ def _install_scope_guard(context: BrowserContext, scope: Scope) -> None:
                 return
         await route.continue_()
 
-    context.route("**/*", guard)
+    await context.route("**/*", guard)
 
 
 async def _create_tinyfish_session(target_url: str) -> tuple[str, str]:
@@ -132,7 +132,7 @@ async def browser_session(
             with suppress(Exception):
                 await context.clear_cookies()
 
-            _install_scope_guard(context, scope)
+            await _install_scope_guard(context, scope)
 
             cdp: CDPSession | None = None
             try:

@@ -107,7 +107,13 @@ HOSTNAME_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0
 
 
 def normalize_host(host: str) -> str:
-    value = (host or "").strip().lower().rstrip(".")
+    value = (host or "").strip()
+    if "://" in value:
+        try:
+            value = urlsplit(value).hostname or ""
+        except ValueError as exc:
+            raise PolicyViolation(f"Invalid hostname: {host}") from exc
+    value = value.strip().lower().rstrip(".")
     if not value:
         raise PolicyViolation("Target host is empty")
     wildcard = value.startswith("*.")
