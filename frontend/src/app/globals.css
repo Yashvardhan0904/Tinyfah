@@ -1,0 +1,330 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: #f7f9fc;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #f3f6f9;
+  --color-border: #dfe5ec;
+  --color-text: #15202b;
+  --color-muted: #5d6b7b;
+  --color-accent: #18a66b;
+  --color-accent-light: #dff7eb;
+  --color-running: #2774c7;
+  --color-failed: #d9485f;
+  --color-warning: #b7791f;
+  --color-violet: #6d4aca;
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+html,
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+html[data-theme="dark"] {
+  --color-bg: #0b1118;
+  --color-surface-1: #121a23;
+  --color-surface-2: #18232f;
+  --color-border: #2a3a4b;
+  --color-text: #edf3f8;
+  --color-muted: #96a7b8;
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] body {
+  background-color: #0b1118;
+  color: #edf3f8;
+}
+
+html[data-theme="dark"] .theme-navbar {
+  background-color: rgba(18, 26, 35, 0.9) !important;
+  border-color: #2a3a4b !important;
+}
+
+html[data-theme="dark"] .theme-navbar-brand {
+  color: #edf3f8 !important;
+}
+
+html[data-theme="dark"] .theme-navbar-pill {
+  background-color: #18232f !important;
+  border-color: #2a3a4b !important;
+  color: #96a7b8 !important;
+}
+
+html[data-theme="dark"] .hero-heading {
+  color: #f3f7fb !important;
+}
+
+html[data-theme="dark"] .hero-copy {
+  color: #a9b8c7 !important;
+}
+
+html[data-theme="dark"] [class~="bg-[#ffffff]"],
+html[data-theme="dark"] [class~="bg-white"] {
+  background-color: #121a23 !important;
+}
+
+html[data-theme="dark"] [class~="bg-[#f7f9fc]"],
+html[data-theme="dark"] [class~="bg-[#f3f6f9]"],
+html[data-theme="dark"] [class~="bg-[#f5f7fa]"],
+html[data-theme="dark"] [class~="bg-[#eef2f5]"] {
+  background-color: #18232f !important;
+}
+
+html[data-theme="dark"] [class~="border-[#dfe5ec]"],
+html[data-theme="dark"] [class~="border-[#d5dee7]"],
+html[data-theme="dark"] [class~="border-[#edf1f4]"],
+html[data-theme="dark"] [class~="border-[#cbd5e1]"] {
+  border-color: #2a3a4b !important;
+}
+
+html[data-theme="dark"] [class~="text-[#15202b]"],
+html[data-theme="dark"] [class~="text-[#243342]"],
+html[data-theme="dark"] [class~="text-[#0f1c28]"],
+html[data-theme="dark"] [class~="text-[#516273]"] {
+  color: #edf3f8 !important;
+}
+
+html[data-theme="dark"] [class~="text-[#5d6b7b]"],
+html[data-theme="dark"] [class~="text-[#748294]"],
+html[data-theme="dark"] [class~="text-[#9aa7b5]"] {
+  color: #96a7b8 !important;
+}
+
+html[data-theme="dark"] [class~="text-[#18a66b]"],
+html[data-theme="dark"] [class~="text-[#16804f]"] {
+  color: #69e6aa !important;
+}
+
+html[data-theme="dark"] [class~="text-[#6d4aca]"] {
+  color: #c1aaff !important;
+}
+
+html[data-theme="dark"] [class~="bg-[#e8f7ef]"],
+html[data-theme="dark"] [class~="bg-[#e9f8f0]"],
+html[data-theme="dark"] [class~="bg-[#dff7eb]"] {
+  background-color: #17372a !important;
+}
+
+html[data-theme="dark"] [class~="bg-[#f1edff]"],
+html[data-theme="dark"] [class~="bg-[#e8e0ff]"] {
+  background-color: #2a2342 !important;
+}
+
+html[data-theme="dark"] [class~="bg-[#e7f0fb]"] {
+  background-color: #1b334f !important;
+}
+
+html[data-theme="dark"] [class~="bg-[#e2f6ec]"] {
+  background-color: #17372a !important;
+}
+
+html[data-theme="dark"] [class~="bg-[#fde8eb]"] {
+  background-color: #43212a !important;
+}
+
+html[data-theme="dark"] [class~="bg-[#f1f4f8]"] {
+  background-color: #18232f !important;
+}
+
+html[data-theme="dark"] [class~="bg-[#fff5df]"] {
+  background-color: #40341d !important;
+}
+
+html[data-theme="dark"] [class~="text-[#6ee9ae]"] {
+  color: #75efb2 !important;
+}
+
+html[data-theme="dark"] [class~="text-[#ff8d98]"] {
+  color: #ff9eaa !important;
+}
+
+html[data-theme="dark"] [class~="text-[#7db8ff]"] {
+  color: #8dc2ff !important;
+}
+
+html[data-theme="dark"] [class~="text-[#f5c979]"] {
+  color: #f7d58b !important;
+}
+
+html[data-theme="dark"] [class~="border-[#9ed9b8]"],
+html[data-theme="dark"] [class~="border-[#f0aab5]"],
+html[data-theme="dark"] [class~="border-[#a9c8ed]"],
+html[data-theme="dark"] [class~="border-[#e7c784]"] {
+  border-color: #456176 !important;
+}
+
+html[data-theme="dark"] [class~="border-[#18a66b]"],
+html[data-theme="dark"] [class~="border-[#18a66b]/40"],
+html[data-theme="dark"] [class~="border-[#18a66b]/30"] {
+  border-color: #318a61 !important;
+}
+
+html[data-theme="dark"] [class~="border-[#6d4aca]"],
+html[data-theme="dark"] [class~="border-[#6d4aca]/30"],
+html[data-theme="dark"] [class~="border-[#6d4aca]/50"] {
+  border-color: #725aa8 !important;
+}
+
+html[data-theme="dark"] [class~="placeholder-[#9aa7b5]"]::placeholder,
+html[data-theme="dark"] [class~="placeholder-[#748294]"]::placeholder {
+  color: #788b9d !important;
+}
+
+html[data-theme="dark"] input,
+html[data-theme="dark"] textarea,
+html[data-theme="dark"] select {
+  color: #edf3f8;
+  caret-color: #69e6aa;
+}
+
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+  color: #788b9d;
+}
+
+html[data-theme="dark"] ::selection {
+  background: rgba(105, 230, 170, 0.28);
+  color: #ffffff;
+}
+
+html[data-theme="dark"] [class~="hover:bg-[#f3f6f9]"]:hover,
+html[data-theme="dark"] [class~="hover:bg-[#f5fbf7]"]:hover {
+  background-color: #1d2a38 !important;
+}
+
+html[data-theme="dark"] [class~="hover:bg-[#e5f7ee]"]:hover {
+  background-color: #17372a !important;
+}
+
+html[data-theme="dark"] .hero-pointer-glow {
+  background: radial-gradient(
+    circle 26rem at var(--mouse-x) var(--mouse-y),
+    rgba(86, 227, 159, 0.16),
+    transparent 68%
+  );
+}
+
+::selection {
+  background: rgba(24, 166, 107, 0.18);
+  color: #15202b;
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+/* Light scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f4f8;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c3ccd6;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca9b7;
+}
+
+/* Marquee animation */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+/* Quiet ambient motion for the landing hero. The spotlight follows the pointer
+   through CSS variables so the rest of the page never re-renders. */
+.hero-section {
+  --mouse-x: 50%;
+  --mouse-y: 18%;
+  isolation: isolate;
+}
+
+.hero-pointer-glow {
+  background: radial-gradient(
+    circle 26rem at var(--mouse-x) var(--mouse-y),
+    rgba(24, 166, 107, 0.12),
+    transparent 68%
+  );
+  transition: background 180ms ease-out;
+}
+
+.hero-grid {
+  opacity: 0.5;
+  background-image:
+    linear-gradient(rgba(24, 166, 107, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 166, 107, 0.055) 1px, transparent 1px);
+  background-size: 42px 42px;
+  mask-image: linear-gradient(to bottom, black, transparent 78%);
+}
+
+.hero-orb {
+  border-radius: 999px;
+  filter: blur(2px);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.hero-orb-primary {
+  width: 17rem;
+  height: 17rem;
+  top: 5rem;
+  left: calc(50% - 8.5rem);
+  background: rgba(24, 166, 107, 0.07);
+  box-shadow: 0 0 90px 24px rgba(24, 166, 107, 0.06);
+  animation: hero-float-primary 11s ease-in-out infinite;
+}
+
+.hero-orb-secondary {
+  width: 9rem;
+  height: 9rem;
+  top: 14rem;
+  right: 13%;
+  background: rgba(39, 116, 199, 0.055);
+  animation: hero-float-secondary 14s ease-in-out infinite;
+}
+
+@keyframes hero-float-primary {
+  0%, 100% { transform: translate3d(-12px, 0, 0) scale(1); }
+  50% { transform: translate3d(18px, 20px, 0) scale(1.08); }
+}
+
+@keyframes hero-float-secondary {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(-22px, 18px, 0); }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .hero-pointer-glow {
+    transition: none;
+  }
+}
