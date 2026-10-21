@@ -41,6 +41,7 @@ export function SegmentedControl<T extends string>({
         const isActive = value === option.value;
         return (
           <button
+            type="button"
             key={option.value}
             role="tab"
             aria-selected={isActive}

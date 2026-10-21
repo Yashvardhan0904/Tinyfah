@@ -270,6 +270,15 @@ class HarnessEngine:
                         await cdp_session.send("Page.enable")
                         await cdp_session.send("Audits.enable")
                         await cdp_session.send("Network.enable")
+                        await cdp_session.send("Network.setCacheDisabled", {"cacheDisabled": True})
+
+                        try:
+                            await context.set_extra_http_headers({
+                                "Pragma": "no-cache",
+                                "Cache-Control": "no-cache, no-store, must-revalidate",
+                            })
+                        except Exception:
+                            pass
 
                         cdp_session.on(
                             "Audits.issueAdded",
@@ -292,14 +301,65 @@ class HarnessEngine:
 
                     # Navigate to target
                     http_status = None
+                    nav_error = None
+                    resp = None
                     try:
                         resp = await page.goto(target_url, wait_until="domcontentloaded", timeout=15000)
                         if resp:
                             http_status = resp.status
                             if not doc_headers:
                                 doc_headers.update(resp.headers)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        nav_error = str(e)
+
+                    # Check if target is unreachable (connection error, tunnel failure, or Chrome error page)
+                    page_current_url = getattr(page, "url", "") if page else ""
+                    if nav_error or resp is None or page_current_url.startswith("chrome-error://"):
+                        err_detail = "net::ERR_TUNNEL_CONNECTION_FAILED" if "ERR_TUNNEL_CONNECTION_FAILED" in str(nav_error) else (nav_error or "net::ERR_CONNECTION_FAILED")
+                        if "Error: " in err_detail:
+                            err_detail = err_detail.split("Error: ")[-1].split("\n")[0].strip()
+                        fail_msg = f"Target cannot be reached ({err_detail}). Session terminated."
+
+                        agent_trace.append({
+                            "step": len(agent_trace) + 1,
+                            "phase": "browser_navigation",
+                            "agent": "Harness Controller",
+                            "tool": "playwright_navigator",
+                            "action": "navigate_failed",
+                            "reason": f"Connecting to {target_url}",
+                            "observation_preview": fail_msg,
+                            "status": "failed",
+                            "error": fail_msg,
+                        })
+                        if on_step_callback:
+                            on_step_callback(list(agent_trace))
+
+                        if on_session_callback:
+                            on_session_callback({
+                                "provider": "tinyfish" if session_id else "local",
+                                "session_id": session_id,
+                                "status": "terminated",
+                                "target_url": target_url,
+                                "error": fail_msg,
+                            })
+
+                        return {
+                            "target_url": target_url,
+                            "chapter": chapter,
+                            "score": None,
+                            "grade": "NOT_ASSESSED",
+                            "scan_status": "failed",
+                            "error": fail_msg,
+                            "summary": fail_msg,
+                            "findings": [],
+                            "asvs_results": [],
+                            "agent_trace": agent_trace,
+                            "browser_session": {
+                                "status": "terminated",
+                                "target_url": target_url,
+                                "error": fail_msg,
+                            },
+                        }
 
                     # Capture initial baseline screenshot via CDP only if URL belongs to target domain
                     landing_ctx = HarnessContext(

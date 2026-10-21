@@ -15,7 +15,16 @@ export function ASVSTable({ items }: ASVSTableProps) {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filteredItems = items.filter((item) => {
+  // Shift all manual results to bottom while preserving their natural chapter order
+  const isManual = (item: ASVSTestItem) => {
+    return item.status === "MANUAL_VERIFY" || (item.status as string) === "MANUAL";
+  };
+
+  const nonManualItems = items.filter((item) => !isManual(item));
+  const manualItems = items.filter((item) => isManual(item));
+  const orderedItems = [...nonManualItems, ...manualItems];
+
+  const filteredItems = orderedItems.filter((item) => {
     const matchesSearch =
       item.requirement_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.chapter_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -45,13 +54,13 @@ export function ASVSTable({ items }: ASVSTableProps) {
           </div>
 
           <div className="flex items-center gap-2 text-xs font-mono">
-            <span className="text-[#ea7336]">{passedCount} Passed</span>
+            <span className="text-[#10b981] font-semibold">{passedCount} Passed</span>
             <span className="text-[#5d6b7b]">•</span>
-            <span className="text-[#d9485f]">{failedCount} Failed</span>
+            <span className="text-[#d9485f] font-semibold">{failedCount} Failed</span>
             {otherCount > 0 && (
               <>
                 <span className="text-[#5d6b7b]">•</span>
-                <span className="text-[#F5B84B]">{otherCount} Other</span>
+                <span className="text-[#d97706]">{otherCount} Other</span>
               </>
             )}
           </div>
@@ -78,7 +87,13 @@ export function ASVSTable({ items }: ASVSTableProps) {
                 className={cn(
                   "px-2.5 py-1 rounded border transition-colors",
                   statusFilter === st
-                    ? "bg-[#dfe5ec] text-[#15202b] border-[#5d6b7b]"
+                    ? st === "PASS"
+                      ? "bg-[#ecfdf5] text-[#059669] border-[#a7f3d0] font-semibold"
+                      : st === "FAIL"
+                      ? "bg-[#fff1f2] text-[#d9485f] border-[#fecdd3] font-semibold"
+                      : st === "MANUAL_VERIFY"
+                      ? "bg-[#fffbeb] text-[#b45309] border-[#fde68a] font-semibold"
+                      : "bg-[#dfe5ec] text-[#15202b] border-[#5d6b7b] font-semibold"
                     : "bg-[#ffffff] text-[#5d6b7b] border-[#dfe5ec] hover:text-[#15202b]"
                 )}
               >
@@ -106,7 +121,18 @@ export function ASVSTable({ items }: ASVSTableProps) {
                   className="w-full flex items-center justify-between p-3.5 text-left hover:bg-[#f5f7fa]/50 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-4">
-                    <span className="font-mono text-xs font-bold text-[#ea7336] shrink-0 w-16">
+                    <span
+                      className={cn(
+                        "font-mono text-xs font-bold shrink-0 w-16",
+                        item.status === "PASS"
+                          ? "text-[#10b981]"
+                          : item.status === "FAIL"
+                          ? "text-[#d9485f]"
+                          : item.status === "MANUAL_VERIFY" || (item.status as string) === "MANUAL"
+                          ? "text-[#d97706]"
+                          : "text-[#5d6b7b]"
+                      )}
+                    >
                       {item.requirement_id}
                     </span>
                     <span className="text-xs font-mono text-[#5d6b7b] px-2 py-0.5 rounded bg-[#f7f9fc] border border-[#dfe5ec] shrink-0 truncate max-w-[140px]">
@@ -126,31 +152,40 @@ export function ASVSTable({ items }: ASVSTableProps) {
                 </button>
 
                 {isExpanded && (
-                  <div className="p-4 pt-2 space-y-2.5 bg-[#1a2636] border-t border-[#ffffff]/5 text-xs font-mono">
-                    <div>
-                      <span className="text-[#5d6b7b] uppercase tracking-wider text-[10px]">
+                  <div className="p-4 pt-3 space-y-3 bg-[#f8fafc] border-t border-[#dfe5ec] text-xs font-mono">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[#5d6b7b] uppercase tracking-wider text-[10px] font-bold">
                         Chapter:
-                      </span>{" "}
-                      <span className="text-[#c8d8e8]">
+                      </span>
+                      <span className="text-[#15202b] font-medium">
                         {item.chapter_code} — {item.chapter_name}
                       </span>
                     </div>
 
                     <div>
-                      <span className="text-[#5d6b7b] uppercase tracking-wider text-[10px]">
+                      <span className="text-[#5d6b7b] uppercase tracking-wider text-[10px] font-bold">
                         Verification Evidence:
                       </span>
-                      <div className="mt-1 p-2.5 rounded bg-[#0f1c28] border border-[#ffffff]/5 text-[#c8d8e8] whitespace-pre-wrap leading-relaxed">
+                      <div
+                        className={cn(
+                          "mt-1.5 p-3 rounded-lg border text-xs whitespace-pre-wrap leading-relaxed font-mono",
+                          item.status === "FAIL"
+                            ? "bg-[#fff1f2] border-[#fecdd3] text-[#991b1b]"
+                            : item.status === "PASS"
+                            ? "bg-[#f0fdf4] border-[#bbf7d0] text-[#166534]"
+                            : "bg-[#ffffff] border-[#dfe5ec] text-[#334155]"
+                        )}
+                      >
                         {item.evidence || "No specific evidence recorded."}
                       </div>
                     </div>
 
                     {item.remediation && (
                       <div>
-                        <span className="text-[#ea7336] uppercase tracking-wider text-[10px]">
+                        <span className="text-[#ea7336] uppercase tracking-wider text-[10px] font-bold">
                           Remediation:
                         </span>
-                        <div className="mt-1 p-2.5 rounded bg-[#0f1c28] border border-[#ffffff]/5 text-[#9aafbf] leading-relaxed font-sans">
+                        <div className="mt-1.5 p-3 rounded-lg bg-[#ffffff] border border-[#fed7c0] text-[#15202b] leading-relaxed font-sans text-xs">
                           {item.remediation}
                         </div>
                       </div>

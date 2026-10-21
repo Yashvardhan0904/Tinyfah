@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { extractUrls } from "@/lib/utils";
+import { cn, extractUrls } from "@/lib/utils";
 import { createScan } from "@/lib/api";
 import { ModeToggle } from "./mode-toggle";
 import { UrlChip } from "./url-chip";
 import { PlanPreview } from "./plan-preview";
 import { Button } from "@/components/ui/button";
 import type { SuiteType } from "@/lib/types";
-import { AlertCircle, Link2 } from "lucide-react";
+import { AlertCircle, Link2, Sparkles, Globe, ShieldAlert } from "lucide-react";
 
 export function MissionComposer() {
   const router = useRouter();
@@ -19,9 +19,27 @@ export function MissionComposer() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Ensure isSubmitting is reset when navigating back via Next.js or browser bfcache
+  useEffect(() => {
+    setIsSubmitting(false);
+
+    const handlePageShow = (event: PageTransitionEvent) => {
+      setIsSubmitting(false);
+    };
+
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
+
   // Extract URLs in real-time from prompt
   const detectedUrls = extractUrls(prompt);
   const activeUrl = manualUrl || detectedUrls[0] || null;
+
+  const handleSelectDemoTarget = (targetUrl: string) => {
+    setPrompt(targetUrl);
+    setManualUrl(targetUrl);
+    setErrorMessage(null);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +64,9 @@ export function MissionComposer() {
         suite,
         focus_prompt: prompt !== formattedUrl ? prompt : undefined,
       });
+
+      // Reset submitting state before navigation so returning to this page is clean
+      setIsSubmitting(false);
 
       // Navigate to live workspace
       router.push(`/scan/${scan.id}`);
@@ -95,7 +116,14 @@ export function MissionComposer() {
                 url={activeUrl}
                 onClear={() => {
                   setManualUrl(null);
-                  if (detectedUrls.length === 0) setPrompt("");
+                  if (activeUrl) {
+                    if (prompt.trim() === activeUrl) {
+                      setPrompt("");
+                    } else {
+                      setPrompt((prev) => prev.replace(activeUrl, "").trim());
+                    }
+                  }
+                  setErrorMessage(null);
                 }}
               />
             </div>
@@ -116,6 +144,40 @@ export function MissionComposer() {
               Go
             </Button>
           </div>
+        </div>
+
+        {/* 1-Click Demo Targets */}
+        <div className="flex flex-wrap items-center justify-center gap-2 px-1">
+          <span className="flex items-center gap-1.5 text-xs font-mono text-[#5d6b7b]">
+            <Sparkles className="h-3.5 w-3.5 text-[#ea7336]" />
+            <span>1-Click Demos:</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => handleSelectDemoTarget("https://iosc.win")}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-mono transition-all cursor-pointer",
+              activeUrl === "https://iosc.win" || prompt.includes("iosc.win")
+                ? "bg-[#fff0e6] text-[#ea7336] border-[#fed7c0] font-semibold shadow-2xs scale-[1.02]"
+                : "bg-white text-[#475569] border-[#d5dee7] hover:border-[#ea7336]/60 hover:text-[#15202b] hover:bg-[#fafbfc]"
+            )}
+          >
+            <Globe className="h-3.5 w-3.5 text-[#ea7336]" />
+            <span>iosc.win</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSelectDemoTarget("https://vuln-website.vercel.app")}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-mono transition-all cursor-pointer",
+              activeUrl === "https://vuln-website.vercel.app" || prompt.includes("vuln-website.vercel.app")
+                ? "bg-[#fff0e6] text-[#ea7336] border-[#fed7c0] font-semibold shadow-2xs scale-[1.02]"
+                : "bg-white text-[#475569] border-[#d5dee7] hover:border-[#ea7336]/60 hover:text-[#15202b] hover:bg-[#fafbfc]"
+            )}
+          >
+            <ShieldAlert className="h-3.5 w-3.5 text-[#d9485f]" />
+            <span>vuln-website.vercel.app</span>
+          </button>
         </div>
 
         {/* Scope or Error Notice */}

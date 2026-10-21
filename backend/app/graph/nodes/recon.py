@@ -53,12 +53,16 @@ async def recon_node(state: AuditGraphState) -> Dict[str, Any]:
         except Exception:
             cookies = []
 
+    # Check if page is an internal browser error page or unreachable
+    page_current_url = getattr(page, "url", "") if page else ""
+    is_chrome_error = page_current_url.startswith("chrome-error://") or not state.get("http_status")
+
     # Capture baseline screenshot with DevTools Console HUD
     test_meta = {
         "shortcode": "RECON",
         "name": "Reconnaissance & Baseline Audit",
-        "status": "PASS" if (state.get("http_status") or 200) < 400 else "INFO",
-        "evidence": f"Navigated to {target_url} - Extracted attack surface",
+        "status": "FAIL" if is_chrome_error else ("PASS" if (state.get("http_status") or 200) < 400 else "INFO"),
+        "evidence": "Target cannot be reached. Session terminated." if is_chrome_error else f"Navigated to {target_url} - Extracted attack surface",
     }
     baseline_shot = await capture_hud_screenshot(
         page=page,
@@ -77,12 +81,14 @@ async def recon_node(state: AuditGraphState) -> Dict[str, Any]:
     trace_entry = {
         "step": step,
         "tool": "recon_agent",
-        "reason": f"Discovered page attack surface for {target_url}",
+        "reason": f"Discovered page attack surface for {target_url}" if not is_chrome_error else f"Connecting to {target_url}",
         "observation_preview": (
-            f"Page title: '{initial_recon.get('title', 'N/A')}'. Discovered {forms_count} form(s), "
-            f"{inputs_count} input(s), {len(cookies)} cookie(s), and {len(doc_headers)} header(s)."
+            "Target cannot be reached. Session terminated."
+            if is_chrome_error
+            else f"Page title: '{initial_recon.get('title', 'N/A')}'. Discovered {forms_count} form(s), "
+                 f"{inputs_count} input(s), {len(cookies)} cookie(s), and {len(doc_headers)} header(s)."
         ),
-        "status": "completed",
+        "status": "failed" if is_chrome_error else "completed",
     }
     if baseline_shot:
         trace_entry["screenshot"] = baseline_shot

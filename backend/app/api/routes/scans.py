@@ -114,7 +114,10 @@ async def stream_scan_progress(scan_id: int):
         last_status = None
         seen_browser_session = False
         iteration = 0
-        max_idle_ticks = 400  # 400 * 0.5s = 200 seconds safety
+        max_idle_ticks = 800  # 800 * 0.25s = 200 seconds safety
+
+        # Send initial connected comment to immediately flush headers to client
+        yield ": connected\n\n"
 
         while iteration < max_idle_ticks:
             iteration += 1
@@ -161,7 +164,7 @@ async def stream_scan_progress(scan_id: int):
                     yield f"event: done\ndata: {json.dumps({'status': status, 'grade': normalized.grade, 'score': normalized.score})}\n\n"
                     break
 
-            await asyncio.sleep(0.5)
+            await asyncio.sleep(0.25)
 
     return StreamingResponse(
         event_generator(),

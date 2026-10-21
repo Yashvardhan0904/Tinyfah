@@ -1,12 +1,28 @@
 "use client";
 
 import { useScanStore } from "@/stores/scan-store";
-import { AlertTriangle, RefreshCw } from "lucide-react";
+import { AlertTriangle, AlertCircle, RefreshCw } from "lucide-react";
 
 export function StreamBanner() {
   const streamStatus = useScanStore((s) => s.streamStatus);
+  const scanStatus = useScanStore((s) => s.status);
+  const scanError = useScanStore((s) => s.error);
   const scanId = useScanStore((s) => s.scanId);
   const connectToStream = useScanStore((s) => s.connectToStream);
+
+  // If scan failed due to unreachable target or connection failure
+  if (scanStatus === "failed" || (scanError && scanStatus !== "running")) {
+    return (
+      <div className="flex items-center justify-between px-4 py-2.5 bg-[#d9485f]/10 border-b border-[#d9485f]/25 text-xs font-mono text-[#d9485f]">
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-4 w-4 shrink-0 text-[#d9485f]" />
+          <span className="font-semibold">
+            {scanError || "Target cannot be reached. Session terminated."}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   if (streamStatus !== "reconnecting" && streamStatus !== "error") {
     return null;

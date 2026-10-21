@@ -40,16 +40,22 @@ export interface ASVSTestItem {
   severity: "high" | "medium" | "low" | "info";
   evidence: string;
   remediation: string;
+  description?: string;
   screenshot?: string | null;
 }
 
 export interface FindingItem {
   severity: "high" | "medium" | "low" | "info";
-  category: string;
-  title: string;
+  category?: string;
+  type?: string;
+  title?: string;
+  detail?: string;
   evidence: string;
   remediation: string;
   screenshot?: string | null;
+  asvs?: string;
+  requirement_id?: string;
+  requirement_ids?: string[];
 }
 
 export interface ScanResults {
@@ -111,4 +117,29 @@ export interface WorkflowInfo {
   type: string;
   description: string;
   supported_suites: string[];
+}
+
+export type ExploitStatus = "queued" | "running" | "completed" | "failed";
+
+export interface ExploitStep {
+  step: number;
+  agent: string;
+  tool: string;
+  target_vulnerability: string;
+  reason: string;
+  payload?: string;
+  observation_preview?: string;
+  status: "running" | "completed" | "failed" | "pending";
+  exploit_result?: "EXPLOITED" | "DEFENDED" | "TESTING" | "POC_GENERATED";
+  timestamp?: string;
+}
+
+export interface ExploitSession {
+  scan_id: number;
+  target_url: string;
+  status: ExploitStatus;
+  vulnerabilities_targeted: number;
+  exploits_successful: number;
+  exploits_mitigated: number;
+  agent_trace: ExploitStep[];
 }

@@ -6,19 +6,21 @@ import { getScan } from "@/lib/api";
 import type { Scan } from "@/lib/types";
 import { ScoreCircle } from "@/components/report/score-circle";
 import { GradeBadge } from "@/components/report/grade-badge";
-import { FindingsCard } from "@/components/report/findings-card";
-import { ASVSTable } from "@/components/report/asvs-table";
+import { ExecutiveLapsesGrid } from "@/components/report/executive-lapses-grid";
 import { Chip, type ChipStatus } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import {
   ArrowLeft,
+  ArrowRight,
   Printer,
   Radio,
   ExternalLink,
   AlertTriangle,
   Calendar,
   Globe,
+  ShieldCheck,
+  Flame,
 } from "lucide-react";
 
 interface ReportClientViewProps {
@@ -108,6 +110,17 @@ export function ReportClientView({ scanId }: ReportClientViewProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <Link href={`/scan/${scan.id}/exploit`}>
+            <Button
+              variant="danger"
+              size="sm"
+              className="gap-1.5 font-mono text-xs bg-[#d9485f] hover:bg-[#c3384e] text-white shadow-xs"
+            >
+              <Flame className="h-3.5 w-3.5" />
+              <span>Exploit Target</span>
+            </Button>
+          </Link>
+
           <Button variant="neutral" size="sm" onClick={handlePrint} className="gap-1.5 font-mono text-xs">
             <Printer className="h-3.5 w-3.5" />
             <span>Export / Print</span>
@@ -160,8 +173,25 @@ export function ReportClientView({ scanId }: ReportClientViewProps) {
           </div>
         </div>
 
+        {/* Failed Connection Alert Banner */}
+        {scan.status === "failed" && (
+          <div className="rounded-2xl bg-[#fff5f5] border border-[#fecaca] p-6 sm:p-8 flex items-start gap-4 shadow-sm">
+            <div className="h-10 w-10 rounded-xl bg-[#fee2e2] border border-[#fca5a5] flex items-center justify-center shrink-0 text-[#dc2626]">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div className="space-y-1.5 flex-1 min-w-0">
+              <h3 className="text-base font-bold text-[#991b1b]">
+                Target Cannot Be Reached • Session Terminated
+              </h3>
+              <p className="text-xs sm:text-[13px] text-[#b91c1c] leading-relaxed font-mono">
+                {String(scan.error || results.error || "The browser could not establish a connection to the target server. No security audit could be completed.")}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Executive Summary */}
-        {results.summary && (
+        {results.summary && scan.status !== "failed" && (
           <div className="rounded-xl bg-[#ffffff] border border-[#dfe5ec] p-5">
             <h3 className="text-xs font-mono font-semibold uppercase tracking-wider text-[#5d6b7b] mb-2">
               Executive Assessment Summary
@@ -172,11 +202,37 @@ export function ReportClientView({ scanId }: ReportClientViewProps) {
           </div>
         )}
 
-        {/* Vulnerability Findings */}
-        <FindingsCard findings={findings} />
+        {/* Plain-English Executive Security Lapses & Exploit Risks */}
+        {scan.status !== "failed" && (
+          <ExecutiveLapsesGrid findings={findings} asvsResults={asvsResults} />
+        )}
 
-        {/* OWASP ASVS Compliance Matrix */}
-        <ASVSTable items={asvsResults} />
+        {/* Technical Matrix Callout Card */}
+        {scan.status !== "failed" && (
+          <div className="rounded-2xl bg-[#ffffff] border border-[#dfe5ec] p-6 sm:p-7 flex flex-col sm:flex-row items-center justify-between gap-5 shadow-2xs">
+            <div className="space-y-1.5 text-center sm:text-left">
+              <div className="flex items-center justify-center sm:justify-start gap-2">
+                <ShieldCheck className="h-4 w-4 text-[#ea7336]" />
+                <h3 className="text-sm font-bold font-mono uppercase tracking-wider text-[#15202b]">
+                  OWASP ASVS Verification Matrix
+                </h3>
+                <span className="px-2 py-0.5 rounded-full bg-[#f3f6f9] border border-[#dfe5ec] text-[10px] font-mono text-[#5d6b7b]">
+                  {asvsResults.length} Controls
+                </span>
+              </div>
+              <p className="text-xs text-[#5d6b7b] max-w-xl leading-relaxed">
+                Access the complete requirement-by-requirement verification matrix with automated evidence, chapter breakdowns, and targeted remediation guidelines.
+              </p>
+            </div>
+
+            <Link href={`/scan/${scan.id}/report/technical`} className="shrink-0">
+              <Button variant="primary" size="md" className="gap-2 font-semibold shadow-xs">
+                <span>Get Detailed Techincal report</span>
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        )}
       </main>
 
       {/* Footer */}

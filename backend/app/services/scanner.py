@@ -63,7 +63,12 @@ def _save_scan_report(scan_id: int, report: Dict[str, Any]) -> None:
             if (isinstance(r, dict) and r.get("status") in ["PASS", "FAIL"])
             or (hasattr(r, "status") and getattr(r, "status") in ["PASS", "FAIL"])
         ]
-        if len(evaluated) == 0:
+        if report.get("scan_status") == "failed":
+            scan.status = "failed"
+            scan.error = report.get("error") or report.get("summary") or "Target cannot be reached. Session terminated."
+            scan.score = None
+            scan.grade = "NOT_ASSESSED"
+        elif len(evaluated) == 0:
             scan.status = "not_assessed"
             scan.score = None
             scan.grade = "NOT_ASSESSED"

@@ -1,10 +1,6 @@
 import type { Scan, ScanRequest, WorkflowInfo } from "./types";
 
 const getApiBase = () => {
-  if (typeof window !== "undefined") {
-    // In browser, relative URLs proxy via Next.js rewrites or direct env
-    return process.env.NEXT_PUBLIC_API_URL || "";
-  }
   return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 };
 
@@ -12,9 +8,12 @@ async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
   const base = getApiBase();
   const url = `${base}${path}`;
   const res = await fetch(url, {
+    cache: "no-store",
     ...init,
     headers: {
       "Content-Type": "application/json",
+      Pragma: "no-cache",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
       ...init?.headers,
     },
   });

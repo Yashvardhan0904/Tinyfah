@@ -184,6 +184,15 @@ async def run_langgraph_security_audit(
                 await cdp_session.send("Page.enable")
                 await cdp_session.send("Audits.enable")
                 await cdp_session.send("Network.enable")
+                await cdp_session.send("Network.setCacheDisabled", {"cacheDisabled": True})
+
+                try:
+                    await context.set_extra_http_headers({
+                        "Pragma": "no-cache",
+                        "Cache-Control": "no-cache, no-store, must-revalidate",
+                    })
+                except Exception:
+                    pass
 
                 cdp_session.on(
                     "Audits.issueAdded",
@@ -204,14 +213,79 @@ async def run_langgraph_security_audit(
                 pass
 
             http_status = None
+            nav_error = None
+            resp = None
             try:
                 resp = await page.goto(target_url, wait_until="domcontentloaded", timeout=15000)
                 if resp:
                     http_status = resp.status
                     if not doc_headers:
                         doc_headers.update(resp.headers)
-            except Exception:
-                pass
+            except Exception as e:
+                nav_error = str(e)
+
+            # Check if target is unreachable (connection error, tunnel failure, or Chrome error page)
+            page_current_url = getattr(page, "url", "") if page else ""
+            if nav_error or resp is None or page_current_url.startswith("chrome-error://"):
+                err_detail = "net::ERR_TUNNEL_CONNECTION_FAILED" if "ERR_TUNNEL_CONNECTION_FAILED" in str(nav_error) else (nav_error or "net::ERR_CONNECTION_FAILED")
+                if "Error: " in err_detail:
+                    err_detail = err_detail.split("Error: ")[-1].split("\n")[0].strip()
+                fail_msg = f"Target cannot be reached ({err_detail}). Session terminated."
+
+                trace.append({
+                    "step": len(trace) + 1,
+                    "phase": "browser_navigation",
+                    "tool": "browser_navigator",
+                    "agent": "Browser Controller",
+                    "action": "navigate_failed",
+                    "reason": f"Connecting to {target_url} via CDP session",
+                    "observation_preview": fail_msg,
+                    "status": "failed",
+                    "error": fail_msg,
+                })
+                if on_step_callback:
+                    on_step_callback(list(trace))
+
+                if on_session_callback:
+                    on_session_callback({
+                        "provider": "tinyfish" if session_id else "local",
+                        "session_id": session_id,
+                        "status": "terminated",
+                        "target_url": target_url,
+                        "error": fail_msg,
+                    })
+
+                return {
+                    "target_url": target_url,
+                    "workflow": "langgraph_multi_agent",
+                    "score": None,
+                    "grade": "NOT_ASSESSED",
+                    "scan_status": "failed",
+                    "coverage_percentage": 0.0,
+                    "pass_rate_percentage": None,
+                    "summary": fail_msg,
+                    "error": fail_msg,
+                    "metrics": {
+                        "total_requirements": 0,
+                        "total_evaluated": 0,
+                        "passed": 0,
+                        "failed": 0,
+                        "manual_verify": 0,
+                        "not_tested": 0,
+                        "errors": 1,
+                    },
+                    "findings": [],
+                    "asvs_results": [],
+                    "chapter_breakdown": {},
+                    "agent_trace": trace,
+                    "raw_headers": {},
+                    "screenshot": None,
+                    "browser_session": {
+                        "status": "terminated",
+                        "target_url": target_url,
+                        "error": fail_msg,
+                    },
+                }
 
             trace.append({
                 "step": len(trace) + 1,
