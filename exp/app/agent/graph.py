@@ -23,6 +23,7 @@ from app.core.policy import (
 )
 from app.http.client import ScopeLockedClient
 from app.services.recon import perform_recon
+from app.services.sqli import attempt_sql_injection_login
 
 ReconFunc = Callable[[ExploitState], Awaitable[dict[str, Any]]]
 PlanFunc = Callable[[ExploitState], Awaitable[list[dict[str, Any]]]]
@@ -42,15 +43,27 @@ async def default_recon(state: ExploitState) -> dict[str, Any]:
 
 
 async def default_plan(state: ExploitState) -> list[dict[str, Any]]:
-    return build_candidates(
+    is_sqli = state.get("mode") == "sqli"
+    candidates = build_candidates(
         state.get("snapshot", {}),
         state.get("inventory", {}),
         target_url=state["target_url"],
         canary=state.get("canary", ""),
+        include_sqli=is_sqli,
     )
+    if is_sqli:
+        return [
+            candidate
+            for candidate in candidates
+            if candidate.get("playbook") == "sql_injection_auth_bypass"
+        ]
+    return candidates
 
 
 async def default_execute(state: ExploitState, action: dict[str, Any]) -> dict[str, Any]:
+    if action.get("tool") == "browser_sql_login":
+        return await attempt_sql_injection_login(state["run_id"], state["target_url"], action)
+
     scope = Scope.from_hosts(config.ALLOWED_HOSTS)
     audit = AuditLog(state["run_id"])
     approved = action.get("action_class") == ActionClass.STATE_CHANGE.value
@@ -167,19 +180,32 @@ def build_exploit_graph(deps: GraphDeps | None = None, checkpointer: Any = None)
         spec = dict(candidates[index])
         action = classify_action(spec["method"], tool=spec["tool"], detail=spec["target"])
         spec["action_class"] = action.value
+        state_change_enabled = bool(state.get("approved_state_change"))
+        auto_approve = (
+            state.get("mode") == "sqli"
+            and spec.get("playbook") == "sql_injection_auth_bypass"
+            and state_change_enabled
+        )
         try:
             enforce_action(
                 action,
-                approved=False,
-                state_change_enabled=state.get("approved_state_change", False),
+                approved=auto_approve,
+                state_change_enabled=state_change_enabled,
             )
         except PolicyViolation as exc:
-            if action is ActionClass.STATE_CHANGE and state.get("approved_state_change"):
+            if action is ActionClass.STATE_CHANGE and state_change_enabled:
                 return {"current_action": spec, "pending_approval": spec, "decision": "approval"}
             return {
                 "current_action": spec,
                 "decision": "skip",
                 "skipped": [{"action": spec, "reason": str(exc)}],
+            }
+        if auto_approve and action is ActionClass.STATE_CHANGE:
+            return {
+                "current_action": spec,
+                "pending_approval": None,
+                "approved_action_id": spec["id"],
+                "decision": "execute",
             }
         return {"current_action": spec, "pending_approval": None, "decision": "execute"}
 
@@ -241,6 +267,9 @@ def build_exploit_graph(deps: GraphDeps | None = None, checkpointer: Any = None)
                         "url": result.get("url"),
                         "baseline_status": baseline.get("status"),
                         "truncated": result.get("truncated"),
+                        "authenticated": result.get("authenticated"),
+                        "screenshot": result.get("screenshot"),
+                        "browser_mode": result.get("browser_mode"),
                     },
                 }
             ],
@@ -266,6 +295,13 @@ def build_exploit_graph(deps: GraphDeps | None = None, checkpointer: Any = None)
     def report_node(state: ExploitState) -> dict[str, Any]:
         findings = state.get("findings", [])
         counts = Counter(finding.get("severity", "info") for finding in findings)
+        screenshots = sorted(
+            {
+                str(finding["evidence"]["screenshot"])
+                for finding in findings
+                if (finding.get("evidence") or {}).get("screenshot")
+            }
+        )
         return {
             "report": {
                 "target_url": state["target_url"],
@@ -275,6 +311,7 @@ def build_exploit_graph(deps: GraphDeps | None = None, checkpointer: Any = None)
                 "finding_count": len(findings),
                 "severity_counts": dict(counts),
                 "findings": findings,
+                "screenshots": screenshots,
                 "skipped": state.get("skipped", []),
                 "notes": state.get("notes", []),
                 "error": state.get("error"),
@@ -292,6 +329,14 @@ def build_exploit_graph(deps: GraphDeps | None = None, checkpointer: Any = None)
 
     def route_after_execute(state: ExploitState) -> str:
         return "verify" if state.get("decision") == "verify" else "advance"
+
+    def route_after_verify(state: ExploitState) -> str:
+        if any(
+            finding.get("verifier") == "sql_injection_login"
+            for finding in state.get("findings", [])
+        ):
+            return "report"
+        return "advance"
 
     def route_after_advance(state: ExploitState) -> str:
         if state.get("current_index", 0) < len(state.get("candidates", [])):
@@ -326,7 +371,9 @@ def build_exploit_graph(deps: GraphDeps | None = None, checkpointer: Any = None)
     graph.add_conditional_edges(
         "execute", route_after_execute, {"verify": "verify", "advance": "advance"}
     )
-    graph.add_edge("verify", "advance")
+    graph.add_conditional_edges(
+        "verify", route_after_verify, {"advance": "advance", "report": "report"}
+    )
     graph.add_conditional_edges(
         "advance", route_after_advance, {"policy_check": "policy_check", "report": "report"}
     )

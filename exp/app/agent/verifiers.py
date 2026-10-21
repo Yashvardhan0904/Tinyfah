@@ -5,30 +5,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import parse_qsl, urlsplit
 
+from app.core.panel import ADMIN_MARKERS, LOGIN_MARKERS
 from app.core.policy import SENSITIVE_QUERY_KEYS, redact_url
-
-ADMIN_MARKERS = (
-    "admin panel",
-    "administrator",
-    "is_admin",
-    'role="admin"',
-    "role: admin",
-    "superuser",
-    "dashboard",
-    "privileged",
-    "switch to admin",
-)
-LOGIN_MARKERS = (
-    "sign in",
-    "signin",
-    "log in",
-    "please login",
-    "password",
-    "unauthorized",
-    "access denied",
-    "forbidden",
-    "authentication required",
-)
 
 LOGIN_REDIRECT_MARKERS = ("login", "signin", "auth", "sso")
 
@@ -216,12 +194,31 @@ def verify_reflected_canary(inp: VerificationInput) -> dict[str, Any] | None:
     )
 
 
+def verify_sql_injection_login(inp: VerificationInput) -> dict[str, Any] | None:
+    response = inp.response or {}
+    if not response.get("authenticated"):
+        return None
+    screenshot = response.get("screenshot")
+    return _evidence(
+        inp,
+        "critical",
+        "SQL injection authentication bypass",
+        "Injected login credentials were accepted and privileged content was reachable.",
+        form_action=inp.action.get("login", {}).get("action", inp.action.get("target", "")),
+        final_url=response.get("url"),
+        matched_marker=response.get("matched_marker"),
+        browser_mode=response.get("browser_mode"),
+        screenshot=screenshot,
+    )
+
+
 VERIFIERS: dict[str, Callable[[VerificationInput], dict[str, Any] | None]] = {
     "exposed_artifact": verify_exposed_artifact,
     "graphql_introspection": verify_graphql_introspection,
     "access_control_bypass": verify_access_control_bypass,
     "unauthenticated_admin_access": verify_unauthenticated_admin_access,
     "reflected_canary": verify_reflected_canary,
+    "sql_injection_login": verify_sql_injection_login,
 }
 
 

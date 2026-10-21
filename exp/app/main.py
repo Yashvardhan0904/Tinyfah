@@ -34,7 +34,7 @@ app.mount("/screenshots", StaticFiles(directory=SCREENSHOTS_DIR), name="screensh
 
 class RunRequest(BaseModel):
     target_url: str = Field(min_length=1)
-    mode: Literal["recon", "explore"] = "recon"
+    mode: Literal["recon", "explore", "sqli"] = "recon"
 
 
 class ApprovalRequest(BaseModel):
@@ -146,7 +146,7 @@ async def start_run(payload: RunRequest, background_tasks: BackgroundTasks) -> d
     create_run(run_id, target, mode=payload.mode)
     AuditLog(run_id).record("run_queued", target=target, mode=payload.mode)
 
-    if payload.mode == "explore":
+    if payload.mode in {"explore", "sqli"}:
         background_tasks.add_task(_execute_explore, run_id, target)
     else:
         background_tasks.add_task(_execute_recon, run_id, target)
@@ -170,8 +170,10 @@ async def approve_run(
 
 
 async def _execute_explore(run_id: str, target: str) -> None:
+    run = get_run(run_id)
+    mode = run.mode if run else "explore"
     try:
-        await run_explore(run_id, target)
+        await run_explore(run_id, target, mode=mode)
     except Exception as exc:
         update_run(run_id, status="failed", error=f"{type(exc).__name__}: {exc}")
         AuditLog(run_id).record("run_failed", error=f"{type(exc).__name__}: {exc}")

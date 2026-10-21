@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import re
 import uuid
+from contextlib import suppress
 from datetime import UTC, datetime
 from pathlib import Path
 
 from playwright.async_api import Page
 
-from app.config import SCREENSHOTS_DIR
+from app.config import MAX_RESPONSE_BYTES, SCREENSHOTS_DIR
 from app.core.policy import Scope
 
 _SAFE_NAME = re.compile(r"[^a-zA-Z0-9_.-]+")
@@ -75,6 +76,60 @@ RECON_SCRIPT = """
 """
 
 
+LOGIN_SUBMIT_SCRIPT = """
+(spec) => {
+    const forms = Array.from(document.forms);
+    const form =
+        forms.find((candidate) => candidate.querySelector('input[type="password"]')) ||
+        forms.find((candidate) => (candidate.action || "") === spec.action);
+    if (!form) {
+        return { ok: false, reason: "login form not found" };
+    }
+
+    const resolve = (name) => {
+        if (!name) return null;
+        const item = form.elements.namedItem(name);
+        if (!item) return null;
+        return item instanceof RadioNodeList ? item[0] : item;
+    };
+    const setValue = (element, value) => {
+        if (!element) return false;
+        element.focus();
+        element.value = value;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+        return true;
+    };
+
+    const hints = ["username", "user", "email", "login", "userid", "user_id", "account", "name"];
+    const textInputs = Array.from(form.elements).filter((element) =>
+        ["text", "email"].includes((element.type || "").toLowerCase())
+    );
+    const fallbackUser =
+        textInputs.find((element) =>
+            hints.some((hint) => (element.name || "").toLowerCase().includes(hint))
+        ) || textInputs[0];
+    const userElement = resolve(spec.usernameField) || fallbackUser;
+    const passwordElement =
+        resolve(spec.passwordField) || form.querySelector('input[type="password"]');
+
+    if (!setValue(userElement, spec.usernamePayload)) {
+        return { ok: false, reason: "username field not found" };
+    }
+    if (!setValue(passwordElement, spec.passwordPayload)) {
+        return { ok: false, reason: "password field not found" };
+    }
+
+    if (typeof form.requestSubmit === "function") {
+        form.requestSubmit();
+    } else {
+        form.submit();
+    }
+    return { ok: true };
+}
+"""
+
+
 def _safe_filename(name: str) -> str:
     cleaned = _SAFE_NAME.sub("-", name).strip("-")[:80]
     return cleaned or "snapshot"
@@ -91,6 +146,28 @@ async def navigate(page: Page, url: str, scope: Scope) -> dict:
         "url": page.url,
         "status": response.status if response else None,
         "navigation_allowed": True,
+    }
+
+
+async def submit_login_form(page: Page, login: dict) -> dict:
+    before = page.url
+    result = await page.evaluate(LOGIN_SUBMIT_SCRIPT, login)
+    if not result.get("ok"):
+        return {"submitted": False, "reason": result.get("reason"), "url": page.url}
+
+    with suppress(Exception):
+        await page.wait_for_url(lambda url: url != before, timeout=6000)
+    await page.wait_for_timeout(1000)
+    return {"submitted": True, "url": page.url}
+
+
+async def page_excerpt(page: Page) -> dict:
+    content = await page.content()
+    truncated = len(content.encode("utf-8", errors="replace")) > MAX_RESPONSE_BYTES
+    return {
+        "url": page.url,
+        "body_excerpt": content[:MAX_RESPONSE_BYTES],
+        "truncated": truncated,
     }
 
 

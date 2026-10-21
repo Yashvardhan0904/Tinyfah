@@ -44,11 +44,13 @@ def _finalize(
     if values.get("error"):
         return _fail(run_id, audit, str(values["error"]))
 
+    report = values.get("report") or {}
     result = {
-        "report": values.get("report"),
+        "report": report,
         "findings": values.get("findings", []),
         "pending_approval": values.get("pending_approval"),
         "browser_mode": values.get("browser_mode"),
+        "screenshots": report.get("screenshots", []),
     }
 
     if paused:
@@ -69,12 +71,13 @@ async def run_explore(
     run_id: str,
     target_url: str,
     *,
+    mode: str = "explore",
     deps: GraphDeps | None = None,
     verified: bool = False,
 ) -> dict[str, Any]:
     audit = AuditLog(run_id)
     update_run(run_id, status="running")
-    audit.record("run_started", target=target_url, mode="explore")
+    audit.record("run_started", target=target_url, mode=mode)
 
     scope = Scope.from_hosts(ALLOWED_HOSTS)
     try:
@@ -96,7 +99,7 @@ async def run_explore(
         graph = build_exploit_graph(deps=deps or GraphDeps(), checkpointer=saver)
         config = {"configurable": {"thread_id": run_id}}
         try:
-            await graph.ainvoke(initial_state(run_id, target), config)
+            await graph.ainvoke(initial_state(run_id, target, mode=mode), config)
         except Exception as exc:
             return _fail(run_id, audit, f"{type(exc).__name__}: {exc}")
         snapshot = await graph.aget_state(config)

