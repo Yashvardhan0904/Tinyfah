@@ -58,7 +58,7 @@ export function Filmstrip() {
                 className={cn(
                   "group relative shrink-0 flex flex-col rounded border overflow-hidden transition-all text-left animate-step-in",
                   isSelected
-                    ? "border-[#18a66b] ring-1 ring-[#18a66b]"
+                    ? "border-[#ea7336] ring-1 ring-[#ea7336]"
                     : "border-[#dfe5ec] hover:border-[#5d6b7b]"
                 )}
               >

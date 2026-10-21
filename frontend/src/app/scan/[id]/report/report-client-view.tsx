@@ -54,7 +54,7 @@ export function ReportClientView({ scanId }: ReportClientViewProps) {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#f7f9fc] text-[#15202b]">
-        <div className="h-6 w-6 border-2 border-[#18a66b] border-t-transparent rounded-full animate-spin mb-3" />
+        <div className="h-6 w-6 border-2 border-[#ea7336] border-t-transparent rounded-full animate-spin mb-3" />
         <span className="text-xs font-mono text-[#748294]">Compiling Security Report #{scanId}...</span>
       </div>
     );
@@ -141,7 +141,7 @@ export function ReportClientView({ scanId }: ReportClientViewProps) {
                   href={scan.url}
                   target="_blank"
                   rel="noreferrer"
-                  className="hover:text-[#18a66b] inline-flex items-center gap-1"
+                  className="hover:text-[#ea7336] inline-flex items-center gap-1"
                 >
                   <span>Open Target</span>
                   <ExternalLink className="h-2.5 w-2.5" />

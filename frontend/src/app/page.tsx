@@ -72,9 +72,9 @@ export default function HomePage() {
               <MissionComposer />
             </div>
             <div className="mx-auto mt-10 flex max-w-3xl flex-wrap items-center justify-center gap-x-7 gap-y-3 text-xs text-[#748294]">
-              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#18a66b]" /> No setup required</span>
-              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#18a66b]" /> Evidence-backed findings</span>
-              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#18a66b]" /> ASVS v5.0.0 aligned</span>
+              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#ea7336]" /> No setup required</span>
+              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#ea7336]" /> Evidence-backed findings</span>
+              <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-[#ea7336]" /> ASVS v5.0.0 aligned</span>
             </div>
           </div>
         </section>
@@ -83,7 +83,7 @@ export default function HomePage() {
           <div className="mx-auto grid max-w-7xl gap-4 md:grid-cols-3">
             {capabilities.map(({ icon: Icon, title, text }) => (
               <div key={title} className="rounded-xl border border-[#dfe5ec] bg-[#ffffff] p-5">
-                <Icon className="h-5 w-5 text-[#18a66b]" />
+                <Icon className="h-5 w-5 text-[#ea7336]" />
                 <h2 className="mt-5 text-sm font-semibold text-[#15202b]">{title}</h2>
                 <p className="mt-2 text-sm leading-6 text-[#5d6b7b]">{text}</p>
               </div>
@@ -94,10 +94,10 @@ export default function HomePage() {
         <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-8">
           <div className="mb-5 flex items-end justify-between">
             <div>
-              <p className="text-xs font-mono uppercase tracking-[0.18em] text-[#18a66b]">Workspace</p>
+              <p className="text-xs font-mono uppercase tracking-[0.18em] text-[#ea7336]">Workspace</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight">Recent assessments</h2>
             </div>
-            <Link href="/history" className="inline-flex items-center gap-1.5 text-sm text-[#5d6b7b] hover:text-[#18a66b]">
+            <Link href="/history" className="inline-flex items-center gap-1.5 text-sm text-[#5d6b7b] hover:text-[#ea7336]">
               View history <ArrowUpRight className="h-4 w-4" />
             </Link>
           </div>
@@ -112,13 +112,13 @@ export default function HomePage() {
           ) : (
             <div className="grid gap-3 md:grid-cols-2">
               {recentScans.map((scan) => (
-                <Link key={scan.id} href={`/scan/${scan.id}`} className="group flex items-center justify-between rounded-xl border border-[#dfe5ec] bg-[#ffffff] p-4 transition hover:border-[#8bd5b0] hover:bg-[#f5fbf7]">
+                <Link key={scan.id} href={`/scan/${scan.id}`} className="group flex items-center justify-between rounded-xl border border-[#dfe5ec] bg-[#ffffff] p-4 transition hover:border-[#fca87d] hover:bg-[#fff0e6]">
                   <div className="min-w-0">
-                    <div className="mb-2 flex items-center gap-2"><span className="font-mono text-xs text-[#18a66b]">RUN #{scan.id}</span><Chip status={(scan.status as ChipStatus) || "queued"} dot /></div>
+                    <div className="mb-2 flex items-center gap-2"><span className="font-mono text-xs text-[#ea7336]">RUN #{scan.id}</span><Chip status={(scan.status as ChipStatus) || "queued"} dot /></div>
                     <p className="truncate text-sm font-medium text-[#243342] group-hover:text-[#15202b]">{scan.url}</p>
                     <p className="mt-1 text-xs text-[#748294]">{formatDate(scan.created_at)}</p>
                   </div>
-                  <ArrowUpRight className="ml-4 h-4 w-4 shrink-0 text-[#748294] group-hover:text-[#18a66b]" />
+                  <ArrowUpRight className="ml-4 h-4 w-4 shrink-0 text-[#748294] group-hover:text-[#ea7336]" />
                 </Link>
               ))}
             </div>

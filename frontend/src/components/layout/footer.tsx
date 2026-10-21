@@ -8,7 +8,7 @@ export function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
           {/* Brand */}
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-[#18a66b]">
+            <div className="flex items-center gap-2 text-[#ea7336]">
               <Shield className="h-4 w-4" />
               <span className="font-mono text-sm font-bold text-[#15202b]">TINYFAH</span>
             </div>
@@ -24,17 +24,17 @@ export function Footer() {
             </h4>
             <ul className="space-y-1.5 text-sm">
               <li>
-                <Link href="/" className="text-[#5d6b7b] hover:text-[#18a66b] transition-colors">
+                <Link href="/" className="text-[#5d6b7b] hover:text-[#ea7336] transition-colors">
                   Home
                 </Link>
               </li>
               <li>
-                <Link href="/#features" className="text-[#5d6b7b] hover:text-[#18a66b] transition-colors">
+                <Link href="/#features" className="text-[#5d6b7b] hover:text-[#ea7336] transition-colors">
                   Features
                 </Link>
               </li>
               <li>
-                <Link href="/history" className="text-[#5d6b7b] hover:text-[#18a66b] transition-colors">
+                <Link href="/history" className="text-[#5d6b7b] hover:text-[#ea7336] transition-colors">
                   Scan History
                 </Link>
               </li>

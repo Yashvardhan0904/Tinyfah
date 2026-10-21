@@ -34,7 +34,7 @@ export function LiveView() {
               href={liveUrl}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-1 text-[11px] font-mono text-[#5d6b7b] hover:text-[#18a66b] transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] font-mono text-[#5d6b7b] hover:text-[#ea7336] transition-colors"
             >
               <span>Popout</span>
               <ExternalLink className="h-3 w-3" />

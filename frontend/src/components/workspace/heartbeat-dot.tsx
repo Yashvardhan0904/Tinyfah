@@ -34,15 +34,15 @@ export function HeartbeatDot() {
     <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#f5f7fa] border border-[#dfe5ec] text-[11px] font-mono text-[#5d6b7b]">
       <span className="relative flex h-2 w-2">
         {isConnected && isPulsing && (
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#18a66b] opacity-75" />
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ea7336] opacity-75" />
         )}
         <span
           className={cn(
             "relative inline-flex rounded-full h-2 w-2 transition-colors duration-200",
             isConnected
               ? isPulsing
-                ? "bg-[#18a66b]"
-                : "bg-[#18a66b]/60"
+                ? "bg-[#ea7336]"
+                : "bg-[#ea7336]/60"
               : isReconnecting
               ? "bg-[#F5B84B] animate-pulse"
               : "bg-[#5d6b7b]/40"

@@ -14,7 +14,7 @@ export function Navbar() {
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center gap-2 text-[#18a66b]">
+            <div className="flex items-center gap-2 text-[#ea7336]">
               <Shield className="h-5 w-5" />
               <span className="theme-navbar-brand font-mono text-base font-bold tracking-tight text-[#15202b]">
                 TINYFAH

@@ -63,10 +63,10 @@ export function MissionComposer() {
     <div id="composer" className="w-full max-w-3xl mx-auto flex flex-col items-center gap-6">
       <form onSubmit={handleSubmit} className="w-full flex flex-col gap-4">
         {/* Main Instruction / URL Input Container */}
-        <div className="relative w-full overflow-hidden rounded-[1.5rem] border border-[#d5dee7] bg-white p-2 shadow-[0_20px_60px_rgba(31,52,73,0.12)] transition-all focus-within:border-[#18a66b]/60 focus-within:shadow-[0_20px_70px_rgba(24,166,107,0.12)]">
+        <div className="relative w-full overflow-hidden rounded-[1.5rem] border border-[#d5dee7] bg-white p-2 shadow-[0_20px_60px_rgba(31,52,73,0.12)] transition-all focus-within:border-[#ea7336]/60 focus-within:shadow-[0_20px_70px_rgba(234,115,54,0.12)]">
           <div className="flex items-center justify-between px-3 pt-2">
             <label htmlFor="assessment-prompt" className="flex items-center gap-2 text-xs font-semibold tracking-wide text-[#243342]">
-              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#e8f7ef] text-[#18a66b]">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#fff0e6] text-[#ea7336]">
                 <Link2 className="h-3.5 w-3.5" />
               </span>
               Assessment target

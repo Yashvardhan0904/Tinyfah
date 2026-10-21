@@ -38,14 +38,14 @@ export function ASVSTable({ items }: ASVSTableProps) {
       <div className="p-4 bg-[#f5f7fa] border-b border-[#dfe5ec] space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <Shield className="h-4 w-4 text-[#18a66b]" />
+            <Shield className="h-4 w-4 text-[#ea7336]" />
             <h3 className="text-sm font-semibold font-mono uppercase tracking-wider text-[#15202b]">
               OWASP ASVS Verification Matrix ({items.length} checks)
             </h3>
           </div>
 
           <div className="flex items-center gap-2 text-xs font-mono">
-            <span className="text-[#18a66b]">{passedCount} Passed</span>
+            <span className="text-[#ea7336]">{passedCount} Passed</span>
             <span className="text-[#5d6b7b]">•</span>
             <span className="text-[#d9485f]">{failedCount} Failed</span>
             {otherCount > 0 && (
@@ -66,7 +66,7 @@ export function ASVSTable({ items }: ASVSTableProps) {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by ID (e.g. V1.2.1), chapter, or evidence..."
-              className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-[#f7f9fc] border border-[#dfe5ec] text-xs font-mono text-[#15202b] placeholder-[#5d6b7b] focus:outline-none focus:border-[#18a66b]"
+              className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-[#f7f9fc] border border-[#dfe5ec] text-xs font-mono text-[#15202b] placeholder-[#5d6b7b] focus:outline-none focus:border-[#ea7336]"
             />
           </div>
 
@@ -106,7 +106,7 @@ export function ASVSTable({ items }: ASVSTableProps) {
                   className="w-full flex items-center justify-between p-3.5 text-left hover:bg-[#f5f7fa]/50 transition-colors"
                 >
                   <div className="flex items-center gap-3 min-w-0 pr-4">
-                    <span className="font-mono text-xs font-bold text-[#18a66b] shrink-0 w-16">
+                    <span className="font-mono text-xs font-bold text-[#ea7336] shrink-0 w-16">
                       {item.requirement_id}
                     </span>
                     <span className="text-xs font-mono text-[#5d6b7b] px-2 py-0.5 rounded bg-[#f7f9fc] border border-[#dfe5ec] shrink-0 truncate max-w-[140px]">
@@ -147,7 +147,7 @@ export function ASVSTable({ items }: ASVSTableProps) {
 
                     {item.remediation && (
                       <div>
-                        <span className="text-[#18a66b] uppercase tracking-wider text-[10px]">
+                        <span className="text-[#ea7336] uppercase tracking-wider text-[10px]">
                           Remediation:
                         </span>
                         <div className="mt-1 p-2.5 rounded bg-[#0f1c28] border border-[#ffffff]/5 text-[#9aafbf] leading-relaxed font-sans">

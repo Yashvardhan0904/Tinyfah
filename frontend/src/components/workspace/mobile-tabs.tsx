@@ -26,7 +26,7 @@ export function MobileTabs() {
             className={cn(
               "flex flex-col items-center gap-1 px-3 py-1 rounded-md text-[11px] font-mono transition-colors",
               isActive
-                ? "text-[#18a66b] bg-[#f5f7fa] border border-[#dfe5ec]"
+                ? "text-[#ea7336] bg-[#f5f7fa] border border-[#dfe5ec]"
                 : "text-[#5d6b7b] hover:text-[#15202b]"
             )}
           >

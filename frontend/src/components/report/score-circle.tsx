@@ -26,8 +26,8 @@ export function ScoreCircle({
 
   if (validScore !== null) {
     if (validScore >= 80) {
-      strokeColor = "#18a66b";
-      textColor = "#18a66b";
+      strokeColor = "#ea7336";
+      textColor = "#ea7336";
     } else if (validScore >= 60) {
       strokeColor = "#F5B84B";
       textColor = "#F5B84B";

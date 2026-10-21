@@ -38,7 +38,7 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
       title={`Switch to ${isDark ? "light" : "dark"} theme`}
-      className="relative flex h-9 w-16 items-center rounded-full border border-[#dfe5ec] bg-[#f3f6f9] p-1 text-[#5d6b7b] shadow-sm transition-colors hover:border-[#b8c5d1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18a66b]/40"
+      className="relative flex h-9 w-16 items-center rounded-full border border-[#dfe5ec] bg-[#f3f6f9] p-1 text-[#5d6b7b] shadow-sm transition-colors hover:border-[#b8c5d1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ea7336]/40"
     >
       <span
         className={`absolute flex h-7 w-7 items-center justify-center rounded-full bg-white shadow-[0_2px_6px_rgba(21,32,43,0.16)] transition-transform duration-300 ease-out ${

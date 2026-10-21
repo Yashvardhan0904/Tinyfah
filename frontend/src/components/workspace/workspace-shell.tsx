@@ -43,7 +43,7 @@ export function WorkspaceShell() {
 
 
           <div className="flex items-center gap-2 min-w-0">
-            <div className="flex items-center gap-1.5 font-bold text-xs tracking-tight text-[#18a66b] shrink-0">
+            <div className="flex items-center gap-1.5 font-bold text-xs tracking-tight text-[#ea7336] shrink-0">
               <Shield className="h-4 w-4" />
               <span className="hidden md:inline">TINYFAH</span>
             </div>
@@ -56,7 +56,7 @@ export function WorkspaceShell() {
             <Chip status={(status as ChipStatus) || "running"} dot />
 
             {grade && (
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-[#f5f7fa] text-xs font-mono font-bold text-[#18a66b]">
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-[#f5f7fa] text-xs font-mono font-bold text-[#ea7336]">
                 GRADE {grade}
               </span>
             )}

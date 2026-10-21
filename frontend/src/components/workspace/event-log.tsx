@@ -30,8 +30,8 @@ export function EventLog() {
         >
           {copied ? (
             <>
-              <Check className="h-3 w-3 text-[#18a66b]" />
-              <span className="text-[#18a66b]">Copied</span>
+              <Check className="h-3 w-3 text-[#ea7336]" />
+              <span className="text-[#ea7336]">Copied</span>
             </>
           ) : (
             <>
@@ -51,9 +51,9 @@ export function EventLog() {
           {rawLogs.map((log, idx) => (
             <div
               key={idx}
-              className="px-2 py-1 rounded hover:bg-[#f5f7fa] transition-colors whitespace-pre-wrap break-all text-[#5d6b7b] selection:bg-[#18a66b]/20"
+              className="px-2 py-1 rounded hover:bg-[#f5f7fa] transition-colors whitespace-pre-wrap break-all text-[#5d6b7b] selection:bg-[#ea7336]/20"
             >
-              <span className="text-[#18a66b]/80 select-none mr-2">
+              <span className="text-[#ea7336]/80 select-none mr-2">
                 [{rawLogs.length - idx}]
               </span>
               <span>{log}</span>

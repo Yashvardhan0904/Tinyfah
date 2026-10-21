@@ -28,7 +28,7 @@ export function TaskQueue() {
   const getStatusIcon = (stepStatus: string) => {
     switch (stepStatus) {
       case "completed":
-        return <CheckCircle2 className="h-3.5 w-3.5 text-[#18a66b]" />;
+        return <CheckCircle2 className="h-3.5 w-3.5 text-[#ea7336]" />;
       case "failed":
         return <XCircle className="h-3.5 w-3.5 text-[#d9485f]" />;
       case "running":
@@ -82,7 +82,7 @@ export function TaskQueue() {
                 className={cn(
                   "p-3 cursor-pointer transition-colors text-left select-none relative animate-step-in",
                   isSelected
-                    ? "bg-[#f5f7fa] border-l-2 border-l-[#18a66b]"
+                    ? "bg-[#f5f7fa] border-l-2 border-l-[#ea7336]"
                     : "hover:bg-[#f5f7fa]/50 border-l-2 border-l-transparent",
                   isLatest && "border-l-[#2774c7] bg-[#2774c7]/5"
                 )}

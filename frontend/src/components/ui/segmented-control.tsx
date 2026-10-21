@@ -59,7 +59,7 @@ export function SegmentedControl<T extends string>({
                 className={cn(
                   "text-[10px] px-1.5 py-0.2 rounded font-mono",
                   isActive
-                    ? "bg-[#18a66b]/15 text-[#18a66b]"
+                    ? "bg-[#ea7336]/15 text-[#ea7336]"
                     : "bg-[#ffffff]/10 text-[#9aa7b5]"
                 )}
               >

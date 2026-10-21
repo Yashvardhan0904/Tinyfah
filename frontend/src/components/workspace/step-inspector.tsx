@@ -49,7 +49,7 @@ export function StepInspector() {
     <Pane
       title={
         <div className="flex items-center gap-2">
-          <Eye className="h-3.5 w-3.5 text-[#18a66b]" />
+          <Eye className="h-3.5 w-3.5 text-[#ea7336]" />
           <span>Step #{currentStep.step ?? (selectedStepIndex! + 1)} Inspector</span>
         </div>
       }
@@ -77,7 +77,7 @@ export function StepInspector() {
         </div>
 
         {showRawJSON ? (
-          <div className="rounded-lg bg-[#f7f9fc] border border-[#dfe5ec] p-3 overflow-x-auto text-xs font-mono text-[#18a66b]">
+          <div className="rounded-lg bg-[#f7f9fc] border border-[#dfe5ec] p-3 overflow-x-auto text-xs font-mono text-[#ea7336]">
             <pre>{JSON.stringify(currentStep, null, 2)}</pre>
           </div>
         ) : (
@@ -120,7 +120,7 @@ export function StepInspector() {
                     href={imgSrc}
                     target="_blank"
                     rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-[#18a66b] hover:underline"
+                    className="inline-flex items-center gap-1 text-[#ea7336] hover:underline"
                   >
                     <span>Full Resolution</span>
                     <ExternalLink className="h-2.5 w-2.5" />

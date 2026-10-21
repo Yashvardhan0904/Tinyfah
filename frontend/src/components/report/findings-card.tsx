@@ -135,7 +135,7 @@ export function FindingsCard({ findings }: FindingsCardProps) {
 
                     {/* Remediation */}
                     <div>
-                      <div className="font-mono text-[11px] uppercase tracking-wider text-[#18a66b] mb-1">
+                      <div className="font-mono text-[11px] uppercase tracking-wider text-[#ea7336] mb-1">
                         Remediation Guidance
                       </div>
                       <div className="p-3 rounded-lg bg-[#f5f7fa] border border-[#dfe5ec] text-[#15202b] leading-relaxed">
@@ -152,7 +152,7 @@ export function FindingsCard({ findings }: FindingsCardProps) {
                             href={imgSrc}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[#18a66b] hover:underline flex items-center gap-1"
+                            className="text-[#ea7336] hover:underline flex items-center gap-1"
                           >
                             <span>Open</span>
                             <ExternalLink className="h-2.5 w-2.5" />

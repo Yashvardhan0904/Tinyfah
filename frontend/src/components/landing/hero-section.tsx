@@ -8,12 +8,12 @@ export function HeroSection() {
         className="absolute inset-0 -z-10 pointer-events-none"
         style={{
           backgroundImage:
-            "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(16,185,129,0.08) 0%, transparent 70%)",
+            "radial-gradient(ellipse 80% 50% at 50% -20%, rgba(234,115,54,0.08) 0%, transparent 70%)",
         }}
       />
 
       {/* Badge */}
-      <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-6 rounded-full bg-emerald-50 border border-emerald-200 text-xs font-mono text-emerald-700">
+      <div className="inline-flex items-center gap-1.5 px-3 py-1 mb-6 rounded-full bg-[#fff0e6] border border-[#fed7c0] text-xs font-mono text-[#ea7336]">
         <ShieldCheck className="h-3.5 w-3.5" />
         OWASP ASVS v5.0.0 · 17 Chapters · 345 Requirements
       </div>
@@ -21,7 +21,7 @@ export function HeroSection() {
       {/* Headline */}
       <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 leading-tight max-w-4xl mx-auto">
         Autonomous{" "}
-        <span className="text-emerald-500">Web Security</span>{" "}
+        <span className="text-[#ea7336]">Web Security</span>{" "}
         Verification
       </h1>
 
@@ -35,7 +35,7 @@ export function HeroSection() {
       <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
         <a
           href="#composer"
-          className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg shadow-sm transition-colors"
+          className="inline-flex items-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-[#ea7336] hover:bg-[#d96527] rounded-lg shadow-sm transition-colors"
         >
           Start Free Assessment
           <ArrowRight className="h-4 w-4" />

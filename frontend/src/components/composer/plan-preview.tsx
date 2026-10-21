@@ -31,7 +31,7 @@ export function PlanPreview({ suite, targetUrl }: PlanPreviewProps) {
       <div className="flex items-center justify-between pb-3 mb-4">
         <div className="flex items-center gap-2">
           {isV1 ? (
-            <Zap className="h-4 w-4 text-[#18a66b]" />
+            <Zap className="h-4 w-4 text-[#ea7336]" />
           ) : (
             <Cpu className="h-4 w-4 text-[#7c8fa3]" />
           )}
@@ -42,7 +42,7 @@ export function PlanPreview({ suite, targetUrl }: PlanPreviewProps) {
         <span
           className={`text-[11px] font-mono px-2 py-0.5 rounded ${
             isV1
-              ? "bg-[#18a66b]/10 text-[#18a66b]"
+              ? "bg-[#ea7336]/10 text-[#ea7336]"
               : "bg-[#8fa3bc]/10 text-[#5d6b7b]"
           }`}
         >
@@ -58,7 +58,7 @@ export function PlanPreview({ suite, targetUrl }: PlanPreviewProps) {
           >
             <div
               className={`p-1 rounded shrink-0 mt-0.5 ${
-                isV1 ? "text-[#18a66b] bg-[#18a66b]/10" : "text-[#748294] bg-[#748294]/10"
+                isV1 ? "text-[#ea7336] bg-[#ea7336]/10" : "text-[#748294] bg-[#748294]/10"
               }`}
             >
               <Check className="h-3 w-3 stroke-[3]" />

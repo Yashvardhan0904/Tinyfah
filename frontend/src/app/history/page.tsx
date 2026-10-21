@@ -49,7 +49,7 @@ export default function HistoryPage() {
       {/* Main Content */}
       <main className="flex-1 max-w-7xl mx-auto w-full p-6 sm:p-10 space-y-7">
         <div>
-          <p className="text-xs font-mono uppercase tracking-[0.18em] text-[#18a66b]">Workspace</p>
+          <p className="text-xs font-mono uppercase tracking-[0.18em] text-[#ea7336]">Workspace</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-[#0f1c28]">Assessment history</h1>
           <p className="mt-2 text-sm text-[#5d6b7b]">Review every run, its evidence, and the current security posture of your targets.</p>
         </div>
@@ -62,7 +62,7 @@ export default function HistoryPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search by URL, scan ID, or status..."
-              className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-[#ffffff] border border-[#cbd5e1] text-sm text-[#15202b] placeholder-[#748294] focus:outline-none focus:border-[#18a66b] focus:ring-2 focus:ring-[#18a66b]/10"
+              className="w-full pl-9 pr-3 py-2.5 rounded-lg bg-[#ffffff] border border-[#cbd5e1] text-sm text-[#15202b] placeholder-[#748294] focus:outline-none focus:border-[#ea7336] focus:ring-2 focus:ring-[#ea7336]/10"
             />
           </div>
 
@@ -74,7 +74,7 @@ export default function HistoryPage() {
         {/* Scans Table / Cards */}
         {loading ? (
           <div className="p-12 text-center text-xs font-mono text-[#748294]">
-            <div className="h-5 w-5 border-2 border-[#18a66b] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+            <div className="h-5 w-5 border-2 border-[#ea7336] border-t-transparent rounded-full animate-spin mx-auto mb-2" />
             <span>Fetching historical scans...</span>
           </div>
         ) : filteredScans.length === 0 ? (
@@ -86,11 +86,11 @@ export default function HistoryPage() {
             {filteredScans.map((scan) => (
               <div
                 key={scan.id}
-                className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#f5fbf7] transition-colors"
+                className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#fff0e6] transition-colors"
               >
                 <div className="space-y-1.5 min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs font-mono font-bold text-[#18a66b]">
+                    <span className="text-xs font-mono font-bold text-[#ea7336]">
                       #{scan.id}
                     </span>
                     <Chip status={scan.status as ChipStatus} dot />

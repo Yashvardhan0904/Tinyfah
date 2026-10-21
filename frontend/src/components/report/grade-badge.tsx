@@ -17,8 +17,8 @@ export function GradeBadge({
   const normGrade = (grade || "NOT_ASSESSED").toUpperCase();
 
   const gradeColors: Record<string, { bg: string; text: string; border: string }> = {
-    A: { bg: "bg-[#18a66b]/15", text: "text-[#18a66b]", border: "border-[#18a66b]/40" },
-    B: { bg: "bg-[#18a66b]/10", text: "text-[#18a66b]", border: "border-[#18a66b]/30" },
+    A: { bg: "bg-[#ea7336]/15", text: "text-[#ea7336]", border: "border-[#ea7336]/40" },
+    B: { bg: "bg-[#ea7336]/10", text: "text-[#ea7336]", border: "border-[#ea7336]/30" },
     C: { bg: "bg-[#F5B84B]/15", text: "text-[#F5B84B]", border: "border-[#F5B84B]/40" },
     D: { bg: "bg-[#d9485f]/10", text: "text-[#d9485f]", border: "border-[#d9485f]/30" },
     F: { bg: "bg-[#d9485f]/20", text: "text-[#d9485f]", border: "border-[#d9485f]/50" },

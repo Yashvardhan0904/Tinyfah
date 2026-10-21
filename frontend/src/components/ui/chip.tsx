@@ -21,8 +21,8 @@ export type ChipStatus =
   | "info";
 
 const chipStyles: Record<ChipStatus, string> = {
-  pass: "bg-[#e2f6ec] text-[#6ee9ae] border-[#9ed9b8]",
-  completed: "bg-[#e2f6ec] text-[#6ee9ae] border-[#9ed9b8]",
+  pass: "bg-[#fff0e6] text-[#ea7336] border-[#fed7c0]",
+  completed: "bg-[#fff0e6] text-[#ea7336] border-[#fed7c0]",
   fail: "bg-[#fde8eb] text-[#ff8d98] border-[#f0aab5]",
   failed: "bg-[#fde8eb] text-[#ff8d98] border-[#f0aab5]",
   error: "bg-[#fde8eb] text-[#ff8d98] border-[#f0aab5]",
@@ -83,7 +83,7 @@ export function Chip({ status, label, className, dot = false }: ChipProps) {
           className={cn(
             "h-1.5 w-1.5 rounded-full shrink-0",
             normalizedStatus === "running" && "animate-pulse bg-blue-500",
-            (normalizedStatus === "pass" || normalizedStatus === "completed") && "bg-emerald-500",
+            (normalizedStatus === "pass" || normalizedStatus === "completed") && "bg-[#ea7336]",
             (normalizedStatus === "fail" || normalizedStatus === "failed" || normalizedStatus === "error" || normalizedStatus === "high") && "bg-red-500",
             (normalizedStatus === "not_assessed" || normalizedStatus === "medium" || normalizedStatus === "manual_verify") && "bg-amber-500",
             (normalizedStatus === "queued" || normalizedStatus === "pending" || normalizedStatus === "not_tested" || normalizedStatus === "not_applicable" || normalizedStatus === "info") && "bg-gray-400"
