@@ -20,7 +20,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   danger:
     "bg-[#fde8eb] text-[#ff8a96] border-[#f0aab5] hover:bg-[#351a22] active:bg-[#401d26]",
   violet:
-    "bg-[#f1edff] text-[#6d4aca] border-[#cfc4ff] hover:bg-[#e8e0ff] active:bg-[#ded2ff]",
+    "bg-[#1e2d3d] text-[#18a66b] border-[#1e2d3d] hover:bg-[#243342] active:bg-[#2a3c50]",
   ghost:
     "bg-transparent text-[#5d6b7b] border-transparent hover:text-[#15202b] hover:bg-[#f3f6f9]",
 };

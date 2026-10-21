@@ -9,12 +9,12 @@ import { UrlChip } from "./url-chip";
 import { PlanPreview } from "./plan-preview";
 import { Button } from "@/components/ui/button";
 import type { SuiteType } from "@/lib/types";
-import { Play, Sparkles, AlertCircle, ArrowUpRight, Link2 } from "lucide-react";
+import { AlertCircle, Link2 } from "lucide-react";
 
 export function MissionComposer() {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
-  const [suite, setSuite] = useState<SuiteType>("v1");
+  const [suite, setSuite] = useState<SuiteType>("langgraph");
   const [manualUrl, setManualUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -111,15 +111,9 @@ export function MissionComposer() {
               size="md"
               isLoading={isSubmitting}
               disabled={!activeUrl && !prompt.trim()}
-              className="group gap-2 shrink-0 rounded-xl px-4 py-2.5 font-semibold"
+              className="shrink-0 rounded-xl px-6 py-2.5 font-semibold"
             >
-              {suite === "langgraph" ? (
-                <Sparkles className="h-4 w-4" />
-              ) : (
-                <Play className="h-4 w-4 fill-current" />
-              )}
-              <span>Start assessment</span>
-              <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              Go
             </Button>
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useScanStore } from "@/stores/scan-store";
 import { Chip, type ChipStatus } from "@/components/ui/chip";
 import { Pane } from "@/components/ui/pane";
@@ -12,6 +13,17 @@ export function TaskQueue() {
   const selectedStepIndex = useScanStore((s) => s.selectedStepIndex);
   const selectStep = useScanStore((s) => s.selectStep);
   const status = useScanStore((s) => s.status);
+
+  const listRef = useRef<HTMLDivElement>(null);
+  const prevCountRef = useRef(0);
+
+  // Auto-scroll to bottom whenever a new step streams in
+  useEffect(() => {
+    if (agentTrace.length > prevCountRef.current) {
+      prevCountRef.current = agentTrace.length;
+      listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
+    }
+  }, [agentTrace.length]);
 
   const getStatusIcon = (stepStatus: string) => {
     switch (stepStatus) {
@@ -36,7 +48,7 @@ export function TaskQueue() {
       title={
         <div className="flex items-center gap-2">
           <Terminal className="h-3.5 w-3.5" />
-          <span>Task Queue & Trace</span>
+          <span>Task Queue &amp; Trace</span>
         </div>
       }
       headerRight={
@@ -58,7 +70,7 @@ export function TaskQueue() {
           />
         </div>
       ) : (
-        <div className="divide-y divide-[#dfe5ec]">
+        <div ref={listRef} className="divide-y divide-[#dfe5ec] overflow-y-auto h-full">
           {agentTrace.map((step, idx) => {
             const isSelected = selectedStepIndex === idx;
             const isLatest = idx === agentTrace.length - 1 && status === "running";
@@ -68,7 +80,7 @@ export function TaskQueue() {
                 key={idx}
                 onClick={() => selectStep(idx)}
                 className={cn(
-                  "p-3 cursor-pointer transition-colors text-left select-none relative",
+                  "p-3 cursor-pointer transition-colors text-left select-none relative animate-step-in",
                   isSelected
                     ? "bg-[#f5f7fa] border-l-2 border-l-[#18a66b]"
                     : "hover:bg-[#f5f7fa]/50 border-l-2 border-l-transparent",
@@ -80,7 +92,7 @@ export function TaskQueue() {
                     <span className="text-[11px] font-mono text-[#5d6b7b] font-semibold shrink-0">
                       #{step.step ?? idx + 1}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#f7f9fc] border border-[#dfe5ec] text-[11px] font-mono text-[#6d4aca] truncate">
+                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[#f7f9fc] border border-[#dfe5ec] text-[11px] font-mono text-[#5d6b7b] truncate">
                       <Wrench className="h-2.5 w-2.5 shrink-0" />
                       <span className="truncate">{step.tool || "agent_action"}</span>
                     </span>

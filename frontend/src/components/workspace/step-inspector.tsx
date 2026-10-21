@@ -68,7 +68,7 @@ export function StepInspector() {
         {/* Status header */}
         <div className="flex items-center justify-between pb-3 border-b border-[#dfe5ec]">
           <div className="flex items-center gap-2">
-            <Wrench className="h-4 w-4 text-[#6d4aca]" />
+            <Wrench className="h-4 w-4 text-[#748294]" />
             <span className="font-mono text-xs font-semibold text-[#15202b]">
               {currentStep.tool || "action"}
             </span>

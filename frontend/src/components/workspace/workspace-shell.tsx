@@ -3,7 +3,7 @@
 import { useScanStore } from "@/stores/scan-store";
 import { useUIStore } from "@/stores/ui-store";
 import { TaskQueue } from "./task-queue";
-import { LiveView } from "./live-view";
+
 import { Filmstrip } from "./filmstrip";
 import { StepInspector } from "./step-inspector";
 import { EventLog } from "./event-log";
@@ -31,7 +31,7 @@ export function WorkspaceShell() {
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#f7f9fc] text-[#15202b]">
       {/* Top Workspace Header */}
-      <header className="flex items-center justify-between px-4 py-2.5 bg-[#ffffff] border-b border-[#dfe5ec] shrink-0 select-none">
+      <header className="flex items-center justify-between px-4 py-2.5 bg-[#ffffff] shrink-0 select-none">
         <div className="flex items-center gap-3 min-w-0">
           <Link
             href="/"
@@ -41,7 +41,6 @@ export function WorkspaceShell() {
             <span className="hidden sm:inline">Composer</span>
           </Link>
 
-          <div className="h-4 w-[1px] bg-[#dfe5ec] shrink-0" />
 
           <div className="flex items-center gap-2 min-w-0">
             <div className="flex items-center gap-1.5 font-bold text-xs tracking-tight text-[#18a66b] shrink-0">
@@ -50,20 +49,20 @@ export function WorkspaceShell() {
             </div>
 
             {/* Target URL chip */}
-            <div className="px-2.5 py-1 rounded bg-[#f5f7fa] border border-[#dfe5ec] text-xs font-mono text-[#15202b] truncate max-w-[200px] sm:max-w-xs md:max-w-md">
+            <div className="px-2.5 py-1 rounded bg-[#f5f7fa] text-xs font-mono text-[#15202b] truncate max-w-[200px] sm:max-w-xs md:max-w-md">
               {url || "Initializing..."}
             </div>
 
             <Chip status={(status as ChipStatus) || "running"} dot />
 
             {grade && (
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-[#f5f7fa] border border-[#dfe5ec] text-xs font-mono font-bold text-[#18a66b]">
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-[#f5f7fa] text-xs font-mono font-bold text-[#18a66b]">
                 GRADE {grade}
               </span>
             )}
 
             {score !== null && score !== undefined && (
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-[#f5f7fa] border border-[#dfe5ec] text-xs font-mono text-[#15202b]">
+              <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-[#f5f7fa] text-xs font-mono text-[#15202b]">
                 {score}/100
               </span>
             )}
@@ -91,38 +90,29 @@ export function WorkspaceShell() {
       {/* Reconnecting / Warning Stream Banner */}
       <StreamBanner />
 
-      {/* Desktop 3-Pane Body (Hidden on mobile) */}
-      <main className="hidden lg:grid grid-cols-12 gap-3 p-3 flex-1 min-h-0 overflow-hidden bg-[#f7f9fc]">
-        {/* Left Pane: Task Queue */}
-        <div className="col-span-3 h-full min-h-0">
-          <TaskQueue />
-        </div>
-
-        {/* Center Pane: Live View + Filmstrip */}
-        <div className="col-span-5 h-full min-h-0 flex flex-col gap-3">
-          <div className="flex-1 min-h-0">
-            <LiveView />
+      {/* Desktop 2-Pane Body (Hidden on mobile) */}
+      <main className="hidden lg:flex flex-col gap-3 p-3 flex-1 min-h-0 overflow-hidden bg-[#f7f9fc]">
+        {/* Main Row: Task Queue + Step Inspector */}
+        <div className="grid grid-cols-12 gap-3 flex-1 min-h-0">
+          {/* Left Pane: Task Queue */}
+          <div className="col-span-5 h-full min-h-0">
+            <TaskQueue />
           </div>
-          <Filmstrip />
+
+          {/* Right Pane: Step Inspector */}
+          <div className="col-span-7 h-full min-h-0">
+            <StepInspector />
+          </div>
         </div>
 
-        {/* Right Pane: Step Inspector */}
-        <div className="col-span-4 h-full min-h-0">
-          <StepInspector />
-        </div>
+        {/* Bottom: Filmstrip */}
+        <Filmstrip />
       </main>
 
       {/* Mobile Tabbed View (Visible on < lg) */}
       <main className="lg:hidden flex-1 min-h-0 overflow-hidden p-2">
         {activeMobileTab === "tasks" && <TaskQueue />}
-        {activeMobileTab === "live" && (
-          <div className="flex flex-col h-full gap-2">
-            <div className="flex-1 min-h-0">
-              <LiveView />
-            </div>
-            <Filmstrip />
-          </div>
-        )}
+        {activeMobileTab === "live" && <Filmstrip />}
         {activeMobileTab === "steps" && <StepInspector />}
         {activeMobileTab === "log" && (
           <div className="h-full bg-[#ffffff] border border-[#dfe5ec] rounded-lg p-3">

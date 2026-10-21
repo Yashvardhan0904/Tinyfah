@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useScanStore } from "@/stores/scan-store";
 import { cn } from "@/lib/utils";
 import { Image as ImageIcon, Camera } from "lucide-react";
@@ -9,10 +10,21 @@ export function Filmstrip() {
   const selectedStepIndex = useScanStore((s) => s.selectedStepIndex);
   const selectStep = useScanStore((s) => s.selectStep);
 
+  const stripRef = useRef<HTMLDivElement>(null);
+  const prevShotCountRef = useRef(0);
+
   // Filter steps that have screenshots
   const stepsWithShots = agentTrace
     .map((step, idx) => ({ ...step, originalIndex: idx }))
     .filter((step) => Boolean(step.screenshot));
+
+  // Auto-scroll to the newest screenshot as it arrives
+  useEffect(() => {
+    if (stepsWithShots.length > prevShotCountRef.current) {
+      prevShotCountRef.current = stepsWithShots.length;
+      stripRef.current?.scrollTo({ left: stripRef.current.scrollWidth, behavior: "smooth" });
+    }
+  }, [stepsWithShots.length]);
 
   return (
     <div className="flex flex-col bg-[#ffffff] border border-[#dfe5ec] rounded-lg overflow-hidden shrink-0">
@@ -26,7 +38,7 @@ export function Filmstrip() {
         </span>
       </div>
 
-      <div className="p-2.5 overflow-x-auto min-h-[90px] flex items-center gap-2.5">
+      <div ref={stripRef} className="p-2.5 overflow-x-auto min-h-[90px] flex items-center gap-2.5">
         {stepsWithShots.length === 0 ? (
           <div className="w-full flex items-center justify-center gap-2 text-xs font-mono text-[#5d6b7b]/60 py-4">
             <ImageIcon className="h-3.5 w-3.5" />
@@ -44,7 +56,7 @@ export function Filmstrip() {
                 key={step.originalIndex}
                 onClick={() => selectStep(step.originalIndex)}
                 className={cn(
-                  "group relative shrink-0 flex flex-col rounded border overflow-hidden transition-all text-left",
+                  "group relative shrink-0 flex flex-col rounded border overflow-hidden transition-all text-left animate-step-in",
                   isSelected
                     ? "border-[#18a66b] ring-1 ring-[#18a66b]"
                     : "border-[#dfe5ec] hover:border-[#5d6b7b]"

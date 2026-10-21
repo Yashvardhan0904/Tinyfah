@@ -61,10 +61,6 @@ export default function HomePage() {
           <div className="hero-pointer-glow pointer-events-none absolute inset-0 -z-10" />
           <div className="mx-auto max-w-7xl">
             <div className="mx-auto max-w-3xl text-center">
-              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[#b5e5ca] bg-[#e9f8f0] px-3 py-1.5 text-xs font-mono text-[#16804f]">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#18a66b] shadow-[0_0_10px_#18a66b]" />
-                SECURITY VERIFICATION, WITHOUT THE NOISE
-              </div>
               <h1 className="hero-heading text-4xl font-semibold tracking-[-0.04em] text-[#0f1c28] sm:text-6xl">
                 Know exactly how secure<br className="hidden sm:block" /> your product really is.
               </h1>

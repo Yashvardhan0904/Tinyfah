@@ -59,8 +59,8 @@ export function SegmentedControl<T extends string>({
                 className={cn(
                   "text-[10px] px-1.5 py-0.2 rounded font-mono",
                   isActive
-                    ? "bg-[#e8f7ef] text-[#16804f]"
-                    : "bg-[#e8edf2] text-[#748294]"
+                    ? "bg-[#18a66b]/15 text-[#18a66b]"
+                    : "bg-[#ffffff]/10 text-[#9aa7b5]"
                 )}
               >
                 {option.badge}

@@ -21,8 +21,8 @@ export function ModeToggle({ value, onChange }: ModeToggleProps) {
     {
       value: "langgraph",
       label: "Deep AI audit",
-      icon: <Bot className="h-3.5 w-3.5 text-[#6d4aca]" />,
-      activeColorClass: "text-[#6d4aca] border-[#6d4aca]/40",
+      icon: <Bot className="h-3.5 w-3.5 text-[#748294]" />,
+      activeColorClass: "text-[#15202b] border-[#dfe5ec]",
       badge: "ASVS",
     },
   ];

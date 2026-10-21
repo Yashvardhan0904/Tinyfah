@@ -126,12 +126,12 @@ export function ASVSTable({ items }: ASVSTableProps) {
                 </button>
 
                 {isExpanded && (
-                  <div className="p-4 pt-1 space-y-2.5 bg-[#f7f9fc]/50 border-t border-[#dfe5ec]/40 text-xs font-mono">
+                  <div className="p-4 pt-2 space-y-2.5 bg-[#1a2636] border-t border-[#ffffff]/5 text-xs font-mono">
                     <div>
                       <span className="text-[#5d6b7b] uppercase tracking-wider text-[10px]">
                         Chapter:
                       </span>{" "}
-                      <span className="text-[#15202b]">
+                      <span className="text-[#c8d8e8]">
                         {item.chapter_code} — {item.chapter_name}
                       </span>
                     </div>
@@ -140,7 +140,7 @@ export function ASVSTable({ items }: ASVSTableProps) {
                       <span className="text-[#5d6b7b] uppercase tracking-wider text-[10px]">
                         Verification Evidence:
                       </span>
-                      <div className="mt-1 p-2.5 rounded bg-[#f7f9fc] border border-[#dfe5ec] text-[#15202b] whitespace-pre-wrap leading-relaxed">
+                      <div className="mt-1 p-2.5 rounded bg-[#0f1c28] border border-[#ffffff]/5 text-[#c8d8e8] whitespace-pre-wrap leading-relaxed">
                         {item.evidence || "No specific evidence recorded."}
                       </div>
                     </div>
@@ -150,7 +150,7 @@ export function ASVSTable({ items }: ASVSTableProps) {
                         <span className="text-[#18a66b] uppercase tracking-wider text-[10px]">
                           Remediation:
                         </span>
-                        <div className="mt-1 p-2.5 rounded bg-[#f5f7fa] border border-[#dfe5ec] text-[#5d6b7b] leading-relaxed font-sans">
+                        <div className="mt-1 p-2.5 rounded bg-[#0f1c28] border border-[#ffffff]/5 text-[#9aafbf] leading-relaxed font-sans">
                           {item.remediation}
                         </div>
                       </div>

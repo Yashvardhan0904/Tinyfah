@@ -27,23 +27,23 @@ export function PlanPreview({ suite, targetUrl }: PlanPreviewProps) {
   const specs = isV1 ? v1Specs : agentSpecs;
 
   return (
-    <div className="w-full rounded-xl bg-[#ffffff] border border-[#dfe5ec] p-5 text-left transition-all">
-      <div className="flex items-center justify-between pb-3 border-b border-[#dfe5ec] mb-4">
+    <div className="w-full rounded-xl bg-[#ffffff] p-5 text-left transition-all">
+      <div className="flex items-center justify-between pb-3 mb-4">
         <div className="flex items-center gap-2">
           {isV1 ? (
             <Zap className="h-4 w-4 text-[#18a66b]" />
           ) : (
-            <Cpu className="h-4 w-4 text-[#6d4aca]" />
+            <Cpu className="h-4 w-4 text-[#7c8fa3]" />
           )}
           <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#15202b]">
             Pre-Flight Assessment Scope
           </span>
         </div>
         <span
-          className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
+          className={`text-[11px] font-mono px-2 py-0.5 rounded ${
             isV1
-              ? "bg-[#18a66b]/10 text-[#18a66b] border-[#18a66b]/30"
-              : "bg-[#6d4aca]/10 text-[#6d4aca] border-[#6d4aca]/30"
+              ? "bg-[#18a66b]/10 text-[#18a66b]"
+              : "bg-[#8fa3bc]/10 text-[#5d6b7b]"
           }`}
         >
           {isV1 ? "Deterministic V1 Harness" : "Multi-Agent Security Graph"}
@@ -54,11 +54,11 @@ export function PlanPreview({ suite, targetUrl }: PlanPreviewProps) {
         {specs.map((item, idx) => (
           <div
             key={idx}
-            className="flex items-start gap-2.5 p-2.5 rounded-lg bg-[#f5f7fa] border border-[#dfe5ec]/70"
+            className="flex items-start gap-2.5 p-2.5 rounded-lg bg-[#f5f7fa]"
           >
             <div
               className={`p-1 rounded shrink-0 mt-0.5 ${
-                isV1 ? "text-[#18a66b] bg-[#18a66b]/10" : "text-[#6d4aca] bg-[#6d4aca]/10"
+                isV1 ? "text-[#18a66b] bg-[#18a66b]/10" : "text-[#748294] bg-[#748294]/10"
               }`}
             >
               <Check className="h-3 w-3 stroke-[3]" />
@@ -72,7 +72,7 @@ export function PlanPreview({ suite, targetUrl }: PlanPreviewProps) {
       </div>
 
       {/* Target Preview Confirmation */}
-      <div className="flex items-center justify-between pt-3 border-t border-[#dfe5ec] text-[11px] font-mono text-[#5d6b7b]">
+      <div className="flex items-center justify-between pt-3 text-[11px] font-mono text-[#5d6b7b]">
         <div className="flex items-center gap-2">
           <Terminal className="h-3.5 w-3.5" />
           <span>Dispatch Target:</span>
@@ -81,7 +81,7 @@ export function PlanPreview({ suite, targetUrl }: PlanPreviewProps) {
           </span>
         </div>
         <div className="flex items-center gap-1.5">
-          <Eye className="h-3.5 w-3.5 text-[#2774c7]" />
+          <Eye className="h-3.5 w-3.5 text-[#748294]" />
           <span>Live SSE Telemetry Stream: Enabled</span>
         </div>
       </div>
