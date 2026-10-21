@@ -1,6 +1,6 @@
 from typing import Dict, Any, List, Optional
 from app.core.screenshots import save_screenshot
-from app.services.scoring import SEVERITY_ORDER, calculate_grade
+from app.services.scoring import SEVERITY_ORDER, calculate_grade, calculate_score_and_grade
 
 DOM_AUDIT_JS = """
 () => {
@@ -419,8 +419,7 @@ def evaluate_asvs_requirements(
         scan_status = "not_assessed"
     else:
         scan_status = "completed"
-        final_score = max(0, min(100, score))
-        grade = calculate_grade(final_score)
+        final_score, grade = calculate_score_and_grade(asvs_results)
 
     return {
         "score": final_score,

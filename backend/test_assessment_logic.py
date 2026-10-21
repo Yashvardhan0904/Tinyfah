@@ -272,7 +272,7 @@ class TestAssessmentLogic(unittest.IsolatedAsyncioTestCase):
         ]
         # Total = 4, Evaluated = 2 (PASS, FAIL), Untested = 1, Error = 1
         # Coverage = 2/4 * 100 = 50.0%
-        # High FAIL deduction = -25 -> Compliance Score = 75 (Grade B)
+        # Weighted Compliance = (3.0 pass weight / 7.0 total weight) * 100 = 43 (Grade F)
         # Scan status should be "partial" because an ERROR occurred
         report = await generate_site_report(
             target_url="http://example.com",
@@ -289,8 +289,8 @@ class TestAssessmentLogic(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(report["metrics"]["errors"], 1)
         self.assertEqual(report["coverage_percentage"], 50.0)
         self.assertEqual(report["pass_rate_percentage"], 50.0)
-        self.assertEqual(report["score"], 75)
-        self.assertEqual(report["grade"], "B")
+        self.assertEqual(report["score"], 43)
+        self.assertEqual(report["grade"], "F")
         self.assertEqual(report["scan_status"], "partial")
 
     # -------------------------------------------------------------------------

@@ -220,8 +220,8 @@ class TestLangGraphWorkflow(unittest.IsolatedAsyncioTestCase):
             "current_step": 1,
         }
         val_output = await evidence_validator_node(validator_state)
-        self.assertEqual(val_output["score"], 85)
-        self.assertEqual(val_output["grade"], "B")
+        self.assertEqual(val_output["score"], 40)
+        self.assertEqual(val_output["grade"], "F")
         self.assertEqual(val_output["scan_status"], "completed")
         self.assertEqual(val_output["coverage_percentage"], 100.0)
         self.assertIn("V3", val_output["chapter_breakdown"])
@@ -244,8 +244,8 @@ class TestLangGraphWorkflow(unittest.IsolatedAsyncioTestCase):
         synth_output = await synthesizer_node(synth_state)
         report = synth_output["final_report"]
         self.assertEqual(report["workflow"], "langgraph_multi_agent")
-        self.assertEqual(report["score"], 85)
-        self.assertEqual(report["grade"], "B")
+        self.assertEqual(report["score"], 40)
+        self.assertEqual(report["grade"], "F")
         self.assertIn("summary", report)
         self.assertEqual(len(report["findings"]), 1)
         self.assertIn("chapter_breakdown", report)
