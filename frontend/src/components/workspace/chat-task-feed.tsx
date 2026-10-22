@@ -31,6 +31,7 @@ export function ChatTaskFeed() {
   const agentTrace = useScanStore((s) => s.agentTrace);
   const status = useScanStore((s) => s.status);
   const url = useScanStore((s) => s.url);
+  const results = useScanStore((s) => s.results);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -260,12 +261,22 @@ export function ChatTaskFeed() {
                   </p>
 
                   {/* Observation / Telemetry Subtext if present */}
-                  {step.observation_preview && (
-                    <div className="mt-2 text-[11px] font-mono text-[#5d6b7b] bg-[#f8fafc] p-2 rounded-lg border border-[#eef2f6] leading-relaxed break-words">
-                      <span className="text-[#ea7336] font-bold">&gt; </span>
-                      {step.observation_preview}
-                    </div>
-                  )}
+                  {step.observation_preview && (() => {
+                    const isSynthesizer =
+                      step.tool === "report_synthesizer" ||
+                      step.tool?.toLowerCase().includes("synthesizer");
+                    const previewText =
+                      isSynthesizer && results?.summary
+                        ? results.summary
+                        : step.observation_preview;
+
+                    return (
+                      <div className="mt-2 text-[11px] font-mono text-[#5d6b7b] bg-[#f8fafc] p-2.5 rounded-lg border border-[#eef2f6] leading-relaxed break-words whitespace-pre-wrap">
+                        <span className="text-[#ea7336] font-bold">&gt; </span>
+                        {previewText}
+                      </div>
+                    );
+                  })()}
 
                   {/* Attached Screenshot (Like a WhatsApp Photo Message!) */}
                   {screenshotSrc && (

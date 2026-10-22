@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: tinyfah-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "pip install -r backend/requirements.txt"
+    startCommand: "uvicorn main:app --app-dir backend --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: TINYFISH_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: ASVS_JSON_PATH
+        value: OWASP_Application_Security_Verification_Standard_5.0.0_en.json
+      - key: TINYFAH_JSON_PATH
+        value: Tinyfah.json

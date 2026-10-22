@@ -60,7 +60,7 @@ async def synthesizer_node(state: AuditGraphState) -> Dict[str, Any]:
         "step": step,
         "tool": "report_synthesizer",
         "reason": "Synthesized executive security audit report and remediation guidelines across all 17 ASVS chapters",
-        "observation_preview": summary_text[:250],
+        "observation_preview": summary_text,
         "status": "completed",
     }
     agent_trace.append(trace_entry)

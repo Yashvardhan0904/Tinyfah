@@ -154,16 +154,29 @@ export function MissionComposer() {
           </span>
           <button
             type="button"
-            onClick={() => handleSelectDemoTarget("https://iosc.win")}
+            onClick={() => handleSelectDemoTarget("https://ipu.ac.in")}
             className={cn(
               "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-mono transition-all cursor-pointer",
-              activeUrl === "https://iosc.win" || prompt.includes("iosc.win")
+              activeUrl === "https://ipu.ac.in" || prompt.includes("ipu.ac.in")
                 ? "bg-[#fff0e6] text-[#ea7336] border-[#fed7c0] font-semibold shadow-2xs scale-[1.02]"
                 : "bg-white text-[#475569] border-[#d5dee7] hover:border-[#ea7336]/60 hover:text-[#15202b] hover:bg-[#fafbfc]"
             )}
           >
             <Globe className="h-3.5 w-3.5 text-[#ea7336]" />
-            <span>iosc.win</span>
+            <span>ipu.ac.in</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleSelectDemoTarget("https://www.chess.com")}
+            className={cn(
+              "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-mono transition-all cursor-pointer",
+              activeUrl === "https://www.chess.com" || activeUrl === "https://chess.com" || prompt.includes("chess.com")
+                ? "bg-[#fff0e6] text-[#ea7336] border-[#fed7c0] font-semibold shadow-2xs scale-[1.02]"
+                : "bg-white text-[#475569] border-[#d5dee7] hover:border-[#ea7336]/60 hover:text-[#15202b] hover:bg-[#fafbfc]"
+            )}
+          >
+            <Globe className="h-3.5 w-3.5 text-[#2774c7]" />
+            <span>chess.com</span>
           </button>
           <button
             type="button"

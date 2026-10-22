@@ -18,7 +18,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   neutral:
     "bg-[#f3f6f9] text-[#243342] border-[#cbd5e1] hover:bg-[#eef2f5] hover:border-[#aab8c7] active:bg-[#e3e9ef]",
   danger:
-    "bg-[#fde8eb] text-[#ff8a96] border-[#f0aab5] hover:bg-[#351a22] active:bg-[#401d26]",
+    "bg-[#d9485f] text-[#ffffff] border-[#d9485f] hover:bg-[#c3384e] active:bg-[#a92b3f] shadow-xs",
   violet:
     "bg-[#1e2d3d] text-[#ea7336] border-[#1e2d3d] hover:bg-[#243342] active:bg-[#2a3c50]",
   ghost:

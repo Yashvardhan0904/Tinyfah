@@ -74,7 +74,7 @@ export function WorkspaceShell() {
                 <Button
                   variant="danger"
                   size="sm"
-                  className="gap-1.5 shadow-xs bg-[#d9485f] hover:bg-[#c3384e] text-white"
+                  className="gap-1.5 font-semibold shadow-xs text-white"
                 >
                   <Flame className="h-3.5 w-3.5" />
                   <span>Exploit</span>
