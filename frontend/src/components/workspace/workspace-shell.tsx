@@ -10,8 +10,9 @@ import { TargetWebsiteBar } from "./target-website-bar";
 import { SwimmingFish } from "./swimming-fish";
 import { Chip, type ChipStatus } from "@/components/ui/chip";
 import { Button } from "@/components/ui/button";
+import { LogoMark } from "@/components/ui/logo-mark"; // <- adjust to wherever your main navbar imports LogoMark from
 import Link from "next/link";
-import { Shield, ArrowLeft, FileText, Flame } from "lucide-react";
+import { FileText, Flame } from "lucide-react";
 
 export function WorkspaceShell() {
   const scanId = useScanStore((s) => s.scanId);
@@ -23,92 +24,105 @@ export function WorkspaceShell() {
   const isTerminal =
     status === "completed" || status === "failed" || status === "not_assessed";
 
+  const hasGrade = !!grade && String(grade).toUpperCase() !== "NOT_ASSESSED";
+  const hasScore = score !== null && score !== undefined;
+
+  const targetStatus = (
+    <>
+      <span className="min-w-0 max-w-[220px] truncate text-sm font-medium text-[#15202b] md:max-w-[340px]">
+        {url || "Preparing target…"}
+      </span>
+      <Chip status={(status as ChipStatus) || "running"} dot />
+      {hasGrade && (
+        <span className="shrink-0 text-sm font-semibold text-[#c4571f]">Grade {grade}</span>
+      )}
+{hasScore ? (
+  <span className="shrink-0 text-sm tabular-nums text-[#5d6b7b]">
+    {score}/100
+  </span>
+) : !isTerminal ? (
+  <span
+    className="inline-flex shrink-0 items-center gap-2 text-sm text-[#5d6b7b]"
+    role="status"
+    aria-label="Calculating security score"
+  >
+    <span className="h-3 w-3 animate-spin rounded-full border-2 border-[#dfe5ec] border-t-[#ea7336]" />
+    <span>Calculating...</span>
+  </span>
+) : null}
+    </>
+  );
+
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#f7f9fc] text-[#15202b]">
-      {/* Top Workspace Header: Kept exactly as it is */}
-      <header className="flex items-center justify-between px-4 py-2.5 bg-[#ffffff] border-b border-[#dfe5ec] shrink-0 select-none">
-        <div className="flex items-center gap-3 min-w-0">
-          <Link
-            href="/"
-            className="flex items-center gap-1.5 text-xs font-mono text-[#5d6b7b] hover:text-[#15202b] transition-colors shrink-0"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Composer</span>
-          </Link>
-
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="flex items-center gap-1.5 font-bold text-xs tracking-tight text-[#ea7336] shrink-0">
-              <Shield className="h-4 w-4" />
-              <span className="hidden md:inline">TINYFAH</span>
-            </div>
-
-            {/* Target URL chip */}
-            <div className="px-2.5 py-1 rounded-md bg-[#f5f7fa] border border-[#e2e8f0] text-xs font-mono text-[#15202b] truncate max-w-[180px] sm:max-w-xs md:max-w-md">
-              {url || "Initializing target..."}
-            </div>
-
-            <Chip status={(status as ChipStatus) || "running"} dot />
-
-            {grade && (
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-[#f5f7fa] border border-[#e2e8f0] text-xs font-mono font-bold text-[#ea7336]">
-                GRADE {grade}
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-[#f7f9fc] text-[#15202b]">
+      {/* Navbar */}
+      <header className="z-40 shrink-0 select-none border-b border-[#dfe5ec] bg-white/85 backdrop-blur-md">
+        <div className="mx-auto max-w-7xl px-4 sm:px-8">
+          <div className="flex h-16 items-center justify-between gap-4 md:grid md:grid-cols-[1fr_auto_1fr]">
+            {/* Left: logo */}
+            <Link
+              href="/"
+              aria-label="TinyFah home"
+              className="group flex shrink-0 items-center gap-2.5 justify-self-start rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ea7336]/50"
+            >
+              <LogoMark />
+              <span className="theme-navbar-brand text-[19px] leading-none tracking-[-0.04em] text-[#15202b]">
+                <span className="font-medium">tiny</span>
+                <span className="font-extrabold">fah</span>
               </span>
-            )}
+            </Link>
 
-            {score !== null && score !== undefined && (
-              <span className="hidden sm:inline-block px-2 py-0.5 rounded bg-[#f5f7fa] border border-[#e2e8f0] text-xs font-mono text-[#15202b]">
-                {score}/100
-              </span>
-            )}
+            {/* Center: target and scan state */}
+            <div className="hidden min-w-0 items-center gap-3 md:flex">{targetStatus}</div>
+
+            {/* Right: live telemetry and actions */}
+            <div className="flex shrink-0 items-center gap-3 justify-self-end">
+              <HeartbeatDot />
+              <ElapsedTimer />
+
+              {isTerminal ? (
+                <div className="flex items-center gap-2">
+                  <Link href={`/scan/${scanId}/exploit`}>
+                    <Button variant="danger" size="sm" className="gap-1.5 font-semibold text-white">
+                      <Flame className="h-3.5 w-3.5" />
+                      <span>Exploit</span>
+                    </Button>
+                  </Link>
+
+                  <Link href={`/scan/${scanId}/report`}>
+                    <Button variant="primary" size="sm" className="gap-1.5">
+                      <FileText className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Security report</span>
+                      <span className="sm:hidden">Report</span>
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <StopButton />
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Right Header Telemetry & Actions */}
-        <div className="flex items-center gap-2.5 shrink-0">
-          <HeartbeatDot />
-          <ElapsedTimer />
-
-          {isTerminal ? (
-            <div className="flex items-center gap-2">
-              <Link href={`/scan/${scanId}/exploit`}>
-                <Button
-                  variant="danger"
-                  size="sm"
-                  className="gap-1.5 font-semibold shadow-xs text-white"
-                >
-                  <Flame className="h-3.5 w-3.5" />
-                  <span>Exploit</span>
-                </Button>
-              </Link>
-
-              <Link href={`/scan/${scanId}/report`}>
-                <Button variant="primary" size="sm" className="gap-1.5 shadow-xs">
-                  <FileText className="h-3.5 w-3.5" />
-                  <span>Security Report</span>
-                </Button>
-              </Link>
-            </div>
-          ) : (
-            <StopButton />
-          )}
+          {/* Mobile: target and scan state */}
+          <div className="flex items-center gap-3 pb-2.5 md:hidden">{targetStatus}</div>
         </div>
       </header>
 
-      {/* Stream Reconnection / Warning Banner */}
+      {/* Stream reconnection / warning banner */}
       <StreamBanner />
 
-      {/* Main Conversational Stream Area (WhatsApp-style auto-scrolling feed) */}
-      <main className="relative flex-1 min-h-0 overflow-hidden flex flex-col bg-[#f7f9fc]">
-        {/* Whole-screen wavy ocean background & single slim fish swimming freely */}
+      {/* Live task stream */}
+      <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[#f7f9fc]">
+        {/* Ocean background and swimming fish */}
         <SwimmingFish />
 
-        {/* Chat Stream: each task appears as a reply with attached screenshot and auto-scroll */}
-        <div className="relative z-10 flex-1 min-h-0 flex flex-col">
+        {/* Each task appears as it happens, with auto-scroll */}
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col">
           <ChatTaskFeed />
         </div>
 
-        {/* Pinned Bottom Container: Name of website being Analysed */}
-        <div className="relative z-10 p-3 sm:px-6 sm:pb-4 sm:pt-1 max-w-3xl w-full mx-auto shrink-0">
+        {/* Pinned: website being analysed */}
+        <div className="relative z-10 mx-auto w-full max-w-3xl shrink-0 p-3 sm:px-6 sm:pb-4 sm:pt-1">
           <TargetWebsiteBar />
         </div>
       </main>
