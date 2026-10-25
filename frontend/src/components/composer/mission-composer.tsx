@@ -6,7 +6,6 @@ import { cn, extractUrls } from "@/lib/utils";
 import { createScan } from "@/lib/api";
 import { ModeToggle } from "./mode-toggle";
 import { UrlChip } from "./url-chip";
-import { PlanPreview } from "./plan-preview";
 import { Button } from "@/components/ui/button";
 import type { SuiteType } from "@/lib/types";
 import { AlertCircle, Link2, Sparkles, Globe, ShieldAlert } from "lucide-react";
@@ -201,9 +200,6 @@ export function MissionComposer() {
           </div>
         )}
       </form>
-
-      {/* Pre-Flight Plan Preview Card */}
-      <PlanPreview suite={suite} targetUrl={activeUrl || prompt.trim()} />
     </div>
   );
 }
