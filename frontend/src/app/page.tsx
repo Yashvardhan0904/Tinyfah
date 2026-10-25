@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import Link from "next/link";
-import { ArrowUpRight, Check, Clock3, X } from "lucide-react";
+import { ArrowUpRight, Check, Clock3, RefreshCw, X } from "lucide-react";
 import { MissionComposer } from "@/components/composer/mission-composer";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
@@ -299,6 +299,7 @@ const steps = [
 export default function HomePage() {
   const [recentScans, setRecentScans] = useState<Scan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
 
   const handleHeroPointerMove = (event: PointerEvent<HTMLElement>) => {
@@ -317,12 +318,31 @@ export default function HomePage() {
     heroRef.current?.style.setProperty("--mouse-y", "18%");
   };
 
-  useEffect(() => {
-    listScans()
-      .then((scans) => setRecentScans(scans.slice(0, 4)))
-      .catch(() => setRecentScans([]))
-      .finally(() => setLoading(false));
+  const refreshScans = useCallback(async (showLoading = false) => {
+    if (showLoading) setIsRefreshing(true);
+    try {
+      const scans = await listScans();
+      setRecentScans(scans.slice(0, 4));
+    } catch {
+      if (showLoading) setRecentScans([]);
+    } finally {
+      setLoading(false);
+      if (showLoading) setIsRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => {
+    const initialRefresh = window.setTimeout(() => void refreshScans(true), 0);
+    const refreshInterval = window.setInterval(() => void refreshScans(), 10000);
+    return () => {
+      window.clearTimeout(initialRefresh);
+      window.clearInterval(refreshInterval);
+    };
+  }, [refreshScans]);
+
+  const handleScanCreated = (scan: Scan) => {
+    setRecentScans((current) => [scan, ...current.filter((item) => item.id !== scan.id)].slice(0, 4));
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-[#f7f9fc] text-[#15202b]">
@@ -356,7 +376,7 @@ export default function HomePage() {
               </Reveal>
             </div>
             <Reveal delay={260} className="mt-12">
-              <MissionComposer />
+              <MissionComposer onScanCreated={handleScanCreated} />
             </Reveal>
           </div>
         </section>
@@ -398,11 +418,21 @@ export default function HomePage() {
         {/* Recent assessments */}
         <section className="mx-auto w-full max-w-7xl px-4 py-20 sm:px-8">
           <Reveal className="mb-5 flex items-end justify-between">
-            <h2 className="text-2xl font-semibold tracking-tight">Recent assessments</h2>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-2xl font-semibold tracking-tight">Recent assessments</h2>
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-mono uppercase tracking-[0.14em] text-[#748294]">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3f9e6b] motion-reduce:animate-none" />
+                  Live
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-[#748294]">Your latest security checks, updated automatically.</p>
+            </div>
             <Link
               href="/history"
               className="inline-flex items-center gap-1.5 text-sm text-[#5d6b7b] transition-colors hover:text-[#ea7336]"
             >
+              {isRefreshing && <RefreshCw className="h-3.5 w-3.5 animate-spin motion-reduce:animate-none" />}
               View all <ArrowUpRight className="h-4 w-4" />
             </Link>
           </Reveal>

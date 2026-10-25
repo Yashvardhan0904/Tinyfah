@@ -29,6 +29,10 @@ body {
   min-height: 100vh;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html[data-theme="dark"] {
   --color-bg: #0b1118;
   --color-surface-1: #121a23;
@@ -300,6 +304,7 @@ kbd {
   --mouse-x: 50%;
   --mouse-y: 18%;
   isolation: isolate;
+  contain: paint;
 }
 
 .hero-pointer-glow {
@@ -325,6 +330,11 @@ kbd {
   filter: blur(2px);
   pointer-events: none;
   will-change: transform;
+}
+
+.hero-heading,
+.hero-copy {
+  text-wrap: balance;
 }
 
 .hero-orb-primary {

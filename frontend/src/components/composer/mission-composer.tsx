@@ -7,10 +7,14 @@ import { createScan } from "@/lib/api";
 import { ModeToggle } from "./mode-toggle";
 import { UrlChip } from "./url-chip";
 import { Button } from "@/components/ui/button";
-import type { SuiteType } from "@/lib/types";
+import type { Scan, SuiteType } from "@/lib/types";
 import { AlertCircle, Link2, Sparkles, Globe, ShieldAlert } from "lucide-react";
 
-export function MissionComposer() {
+interface MissionComposerProps {
+  onScanCreated?: (scan: Scan) => void;
+}
+
+export function MissionComposer({ onScanCreated }: MissionComposerProps) {
   const router = useRouter();
   const [prompt, setPrompt] = useState("");
   const [suite, setSuite] = useState<SuiteType>("langgraph");
@@ -63,6 +67,7 @@ export function MissionComposer() {
         suite,
         focus_prompt: prompt !== formattedUrl ? prompt : undefined,
       });
+      onScanCreated?.(scan);
 
       // Reset submitting state before navigation so returning to this page is clean
       setIsSubmitting(false);
