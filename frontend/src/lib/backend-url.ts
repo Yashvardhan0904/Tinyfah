@@ -1,5 +1,5 @@
 const LOCAL_BACKEND_URL = "http://localhost:8000";
-const PRODUCTION_BACKEND_URL = "https://tracepoint-backend.onrender.com";
+const PRODUCTION_BACKEND_URL = "https://tinyfah-backend.onrender.com";
 
 function normalize(url: string): string {
   return url.replace(/\/+$/, "");
