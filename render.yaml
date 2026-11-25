@@ -21,3 +21,5 @@ services:
         value: TracePoint.json
       - key: TINYFAH_JSON_PATH
         value: TracePoint.json
+      - key: ALLOWED_ORIGINS
+        sync: false

@@ -35,7 +35,7 @@ export function StreamBanner() {
         <span>
           {streamStatus === "reconnecting"
             ? "Stream disconnected. EventSource attempting automatic reconnection..."
-            : "Live telemetry stream lost. Verify backend is running on port 8000."}
+            : "Live telemetry stream lost. Verify backend service is reachable."}
         </span>
       </div>
       {scanId && (

@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.config import SCREENSHOTS_DIR, ROOT_DIR
+from app.config import SCREENSHOTS_DIR, ROOT_DIR, ALLOWED_ORIGINS
 from app.core.database import init_db
 from app.api.routes.asvs import router as asvs_router
 from app.api.routes.harness import router as harness_router
@@ -22,7 +22,7 @@ def create_app() -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
+        allow_origins=ALLOWED_ORIGINS,
         allow_methods=["*"],
         allow_headers=["*"],
     )

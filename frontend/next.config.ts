@@ -1,5 +1,11 @@
 import type { NextConfig } from "next";
 
+const backendUrl =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === "production"
+    ? "https://tracepoint-backend.onrender.com"
+    : "http://localhost:8000");
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
@@ -12,7 +18,6 @@ const nextConfig: NextConfig = {
     },
   },
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     return [
       {
         source: "/api/:path*",

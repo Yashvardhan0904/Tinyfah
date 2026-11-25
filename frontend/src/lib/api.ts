@@ -1,11 +1,8 @@
 import type { Scan, ScanRequest, WorkflowInfo } from "./types";
-
-const getApiBase = () => {
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-};
+import { getBackendUrl } from "./backend-url";
 
 async function fetchJSON<T>(path: string, init?: RequestInit): Promise<T> {
-  const base = getApiBase();
+  const base = getBackendUrl();
   const url = `${base}${path}`;
   const res = await fetch(url, {
     cache: "no-store",
@@ -86,6 +83,6 @@ export async function getASVSTests(suite: string): Promise<{
 }
 
 export function getSSEStreamUrl(scanId: number | string): string {
-  const base = getApiBase();
+  const base = getBackendUrl();
   return `${base}/api/scans/${scanId}/stream`;
 }

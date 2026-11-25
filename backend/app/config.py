@@ -18,6 +18,14 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 MAX_CONCURRENT_SESSIONS = int(os.getenv("MAX_CONCURRENT_SESSIONS", "2"))
 
+# CORS
+DEFAULT_ALLOWED_ORIGINS = "http://localhost:3000,http://127.0.0.1:3000,*"
+ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in (os.getenv("ALLOWED_ORIGINS") or DEFAULT_ALLOWED_ORIGINS).split(",")
+    if origin.strip()
+]
+
 # Database & Storage paths
 DB_FILE = BACKEND_DIR / "scans.db"
 DATABASE_URL = f"sqlite:///{DB_FILE}"
