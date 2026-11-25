@@ -204,7 +204,7 @@ def list_script_definitions() -> Dict[str, ScriptDefinition]:
 
 def register_test(shortcode: str, name: str, description: Optional[str] = None):
     """
-    Decorator to register a deterministic test script for a specific ASVS / Tinyfah requirement.
+    Decorator to register a deterministic test script for a specific ASVS / TracePoint requirement.
     Usage:
         @register_test("V1.2.1", "HTML & Attribute Output Encoding")
         async def test_v1_2_1(ctx: HarnessContext) -> TestResult:

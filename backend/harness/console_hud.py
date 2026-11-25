@@ -134,7 +134,7 @@ def build_console_logs(
         badge = f"[{status}]"
         logs.append({
             "type": log_type,
-            "text": f"[Tinyfah::{sc}] {badge} {name}: {evidence[:160]}",
+            "text": f"[TracePoint::{sc}] {badge} {name}: {evidence[:160]}",
             "source": f"asvs_{sc.lower()}",
             "time": time.strftime("%H:%M:%S"),
         })
@@ -147,7 +147,7 @@ INJECT_CONSOLE_JS = """
     const targetUrl = args.target_url || '';
     const currentTest = args.current_test || '';
     
-    const existing = document.getElementById('tinyfah-devtools-dock');
+    const existing = document.getElementById('tracepoint-devtools-dock');
     if (existing) existing.remove();
     
     let errorCount = 0;
@@ -160,7 +160,7 @@ INJECT_CONSOLE_JS = """
     });
 
     const dock = document.createElement('div');
-    dock.id = 'tinyfah-devtools-dock';
+    dock.id = 'tracepoint-devtools-dock';
     dock.style.cssText = `
         position: fixed;
         bottom: 0;
@@ -281,7 +281,7 @@ INJECT_CONSOLE_JS = """
 
 REMOVE_CONSOLE_JS = """
 () => {
-    const existing = document.getElementById('tinyfah-devtools-dock');
+    const existing = document.getElementById('tracepoint-devtools-dock');
     if (existing) existing.remove();
 }
 """

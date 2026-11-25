@@ -1,1 +1,1 @@
-"""Tinyfah Backend Application Package."""
+"""TracePoint Backend Application Package."""

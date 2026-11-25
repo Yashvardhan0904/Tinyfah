@@ -62,13 +62,13 @@ export function WorkspaceShell() {
             {/* Left: logo */}
             <Link
               href="/"
-              aria-label="TinyFah home"
+              aria-label="TracePoint home"
               className="group flex shrink-0 items-center gap-2.5 justify-self-start rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ea7336]/50"
             >
               <LogoMark />
               <span className="theme-navbar-brand text-[19px] leading-none tracking-[-0.04em] text-[#15202b]">
-                <span className="font-medium">tiny</span>
-                <span className="font-extrabold">fah</span>
+                <span className="font-medium">trace</span>
+                <span className="font-extrabold">point</span>
               </span>
             </Link>
 

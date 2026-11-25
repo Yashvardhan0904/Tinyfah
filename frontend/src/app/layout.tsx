@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tinyfah — Autonomous Security Verification",
+  title: "TracePoint — Autonomous Security Verification",
   description: "Deterministic & Multi-Agent OWASP ASVS web security testing platform",
 };
 

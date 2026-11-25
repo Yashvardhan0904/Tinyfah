@@ -66,7 +66,7 @@ def _approve(run_id: str, approved: bool) -> int:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="tinyfah-exploit")
+    parser = argparse.ArgumentParser(prog="tracepoint-exploit")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("providers", help="Show the configured LLM fallback chain")

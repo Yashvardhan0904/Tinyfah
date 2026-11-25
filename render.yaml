@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: tinyfah-backend
+    name: tracepoint-backend
     runtime: python
     region: oregon
     plan: free
@@ -17,5 +17,7 @@ services:
         value: gemini-2.5-flash
       - key: ASVS_JSON_PATH
         value: OWASP_Application_Security_Verification_Standard_5.0.0_en.json
+      - key: TRACEPOINT_JSON_PATH
+        value: TracePoint.json
       - key: TINYFAH_JSON_PATH
-        value: Tinyfah.json
+        value: TracePoint.json

@@ -10,12 +10,12 @@ from app.config import OWNERSHIP_TIMEOUT_SECONDS
 from app.core.audit import AuditLog
 from app.core.policy import Scope, assert_public_resolution
 
-WELL_KNOWN_TEMPLATE = "/.well-known/tinyfah-{token}.txt"
-META_NAME = "tinyfah-verify"
-USER_AGENT = "Tinyfah-Exploit/0.1 (ownership verification)"
+WELL_KNOWN_TEMPLATE = "/.well-known/tracepoint-{token}.txt"
+META_NAME = "tracepoint-verify"
+USER_AGENT = "TracePoint-Exploit/0.1 (ownership verification)"
 
 _META_RE = re.compile(
-    r"""<meta[^>]+name\s*=\s*["']tinyfah-verify["'][^>]*>""",
+    r"""<meta[^>]+name\s*=\s*["']tracepoint-verify["'][^>]*>""",
     re.IGNORECASE,
 )
 _CONTENT_RE = re.compile(

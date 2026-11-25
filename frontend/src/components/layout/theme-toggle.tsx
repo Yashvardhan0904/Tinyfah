@@ -9,13 +9,13 @@ export function ThemeToggle() {
   const theme = useSyncExternalStore(
     (onStoreChange) => {
       window.addEventListener("storage", onStoreChange);
-      window.addEventListener("tinyfah-theme-change", onStoreChange);
+      window.addEventListener("tracepoint-theme-change", onStoreChange);
       return () => {
         window.removeEventListener("storage", onStoreChange);
-        window.removeEventListener("tinyfah-theme-change", onStoreChange);
+        window.removeEventListener("tracepoint-theme-change", onStoreChange);
       };
     },
-    () => (window.localStorage.getItem("tinyfah-theme") === "dark" ? "dark" : "light"),
+    () => (window.localStorage.getItem("tracepoint-theme") === "dark" ? "dark" : "light"),
     () => "light"
   );
 
@@ -26,8 +26,8 @@ export function ThemeToggle() {
   const toggleTheme = () => {
     const nextTheme: Theme = theme === "light" ? "dark" : "light";
     document.documentElement.dataset.theme = nextTheme;
-    window.localStorage.setItem("tinyfah-theme", nextTheme);
-    window.dispatchEvent(new Event("tinyfah-theme-change"));
+    window.localStorage.setItem("tracepoint-theme", nextTheme);
+    window.dispatchEvent(new Event("tracepoint-theme-change"));
   };
 
   const isDark = theme === "dark";

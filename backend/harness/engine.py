@@ -8,7 +8,7 @@ from playwright.async_api import async_playwright
 from google import genai
 from google.genai import types
 
-from tinyfah_loader import get_chapter_requirements, get_requirement
+from tracepoint_loader import get_chapter_requirements, get_requirement
 from harness.registry import (
     HarnessContext,
     TestResult,

@@ -1,5 +1,5 @@
 [project]
-name = "tinyfah-exploit"
+name = "tracepoint-exploit"
 version = "0.1.0"
 description = "Authorized non-destructive exploitation agent using TinyFish and LangGraph"
 requires-python = ">=3.12,<3.14"

@@ -11,7 +11,7 @@ client = TestClient(app)
 def test_root_reports_service():
     response = client.get("/")
     assert response.status_code == 200
-    assert response.json()["service"] == "tinyfah-exploit"
+    assert response.json()["service"] == "tracepoint-exploit"
 
 
 def test_health_reports_llm_chain():

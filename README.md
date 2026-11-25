@@ -1,8 +1,8 @@
-# 🛡️ Tinyfah — Autonomous AI Web Vulnerability & Security Posture Auditor
+# 🛡️ TracePoint — Autonomous AI Web Vulnerability & Security Posture Auditor
 
 > Built for **AZINHACK 2026** | Powered by **TinyFish Browser API (CDP)**, **Google Gemini 2.5 Flash**, **FastAPI**, and **Next.js**.
 
-**Tinyfah** is an agentic web security auditing platform that inspects live websites using real cloud browser instances over the **Chrome DevTools Protocol (CDP)**. Instead of running a rigid, static checklist like legacy scanners, Tinyfah uses a **Gemini 2.5 Flash ReAct (Reason + Act) Agent Harness** that analyzes initial browser reconnaissance, dynamically selects and executes diagnostic CDP & DOM scripts based on live responses, and streams its reasoning trace in real time.
+**TracePoint** is an agentic web security auditing platform that inspects live websites using real cloud browser instances over the **Chrome DevTools Protocol (CDP)**. Instead of running a rigid, static checklist like legacy scanners, TracePoint uses a **Gemini 2.5 Flash ReAct (Reason + Act) Agent Harness** that analyzes initial browser reconnaissance, dynamically selects and executes diagnostic CDP & DOM scripts based on live responses, and streams its reasoning trace in real time.
 
 ---
 
@@ -46,7 +46,7 @@
 ## 📂 Repository Structure
 
 ```text
-Tinyfah/
+TracePoint/
 ├── backend/
 │   ├── main.py              # FastAPI endpoints, CORS middleware, BackgroundTasks trigger
 │   ├── database.py          # SQLModel Scan table + SQLite WAL concurrency configuration
@@ -105,7 +105,7 @@ cd frontend
 npm install
 npm run dev
 ```
-Open `http://localhost:3000` in your browser to launch the Tinyfah dashboard.
+Open `http://localhost:3000` in your browser to launch the TracePoint dashboard.
 
 ---
 
@@ -160,4 +160,4 @@ Returns the current status (`running`, `completed`, or `failed`), live `agent_tr
 ---
 
 ## 🛡️ Security & Ethics Notice
-Tinyfah performs **strictly passive, non-destructive inspection** (evaluating HTTP headers, cookie flags, DOM attributes, Subresource Integrity tags, and client-side library versions). It does not transmit active exploit payloads or perform destructive fuzzing.
+TracePoint performs **strictly passive, non-destructive inspection** (evaluating HTTP headers, cookie flags, DOM attributes, Subresource Integrity tags, and client-side library versions). It does not transmit active exploit payloads or perform destructive fuzzing.

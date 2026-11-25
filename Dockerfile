@@ -10,7 +10,7 @@ COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir -r /app/backend/requirements.txt
 
 # Copy source code and reference data files
-COPY OWASP_Application_Security_Verification_Standard_5.0.0_en.json Tinyfah.json /app/
+COPY OWASP_Application_Security_Verification_Standard_5.0.0_en.json TracePoint.json /app/
 COPY backend /app/backend
 
 # Create screenshots directory

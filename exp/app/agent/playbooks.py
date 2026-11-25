@@ -43,7 +43,7 @@ SQLI_USERNAME_PAYLOADS: tuple[str, ...] = (
     "' OR '1'='1'#",
 )
 
-SQLI_PASSWORD_PAYLOAD = "tinyfah-probe"
+SQLI_PASSWORD_PAYLOAD = "tracepoint-probe"
 
 LOGIN_USERNAME_HINTS: tuple[str, ...] = (
     "username",

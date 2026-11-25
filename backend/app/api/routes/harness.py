@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.loaders.tinyfah import (
+from app.loaders.tracepoint import (
     get_chapter_requirements,
     get_input_legend,
     get_mode_legend,
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/harness/v1", tags=["Harness"])
 
 @router.get("/requirements")
 def list_v1_requirements():
-    """Returns all Chapter V1 requirements loaded directly from Tinyfah.json."""
+    """Returns all Chapter V1 requirements loaded directly from TracePoint.json."""
     reqs = get_chapter_requirements("V1")
     return {
         "chapter": "V1 Encoding and Sanitization",

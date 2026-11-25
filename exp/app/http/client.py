@@ -29,7 +29,7 @@ from app.core.policy import (
     redact_text,
 )
 
-USER_AGENT = "Tinyfah-Exploit/0.1 (authorized security testing)"
+USER_AGENT = "TracePoint-Exploit/0.1 (authorized security testing)"
 
 
 @dataclass

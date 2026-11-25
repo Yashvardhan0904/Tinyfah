@@ -11,13 +11,13 @@ export function Footer() {
           <div className="space-y-4">
             <Link
               href="/"
-              aria-label="Tinyfah home"
+              aria-label="TracePoint home"
               className="group inline-flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ea7336]/50"
             >
               <LogoMark />
               <span className="text-[19px] leading-none tracking-[-0.04em] text-[#15202b]">
-                <span className="font-medium">tiny</span>
-                <span className="font-extrabold">fah</span>
+                <span className="font-medium">trace</span>
+                <span className="font-extrabold">point</span>
               </span>
             </Link>
             <p className="max-w-xs text-sm leading-6 text-[#5d6b7b]">
@@ -50,7 +50,7 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="https://github.com/Yashvardhan0904/Tinyfah" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[#5d6b7b] transition-colors hover:text-[#ea7336]">
+                <a href="https://github.com/Yashvardhan0904/TracePoint" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[#5d6b7b] transition-colors hover:text-[#ea7336]">
                   Contribute on GitHub <ArrowUpRight className="h-3.5 w-3.5" />
                 </a>
               </li>
@@ -87,7 +87,7 @@ export function Footer() {
                 <Phone className="h-4 w-4 text-[#ea7336]" />
                 +91 80767 23395
               </a>
-              <a href="https://github.com/Yashvardhan0904/Tinyfah/issues" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[#5d6b7b] transition-colors hover:text-[#ea7336]">
+              <a href="https://github.com/Yashvardhan0904/TracePoint/issues" target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[#5d6b7b] transition-colors hover:text-[#ea7336]">
                 <GitFork className="h-4 w-4 text-[#ea7336]" />
                 Report an issue
               </a>
@@ -96,8 +96,8 @@ export function Footer() {
         </div>
 
         <div className="mt-10 flex flex-col gap-2 border-t border-[#dfe5ec] pt-5 text-xs text-[#748294] sm:flex-row sm:items-center sm:justify-between">
-          <span className="font-mono">Tinyfah Autonomous Security Platform</span>
-          <span>© Tinyfah. Built for safer releases.</span>
+          <span className="font-mono">TracePoint Autonomous Security Platform</span>
+          <span>© TracePoint. Built for safer releases.</span>
         </div>
       </div>
     </footer>

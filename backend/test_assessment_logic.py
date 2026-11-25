@@ -344,7 +344,7 @@ class TestAssessmentLogic(unittest.IsolatedAsyncioTestCase):
             name="Verify Context-Aware HTML Encoding",
             status="FAIL",
             severity="high",
-            evidence="Canary probe <tinyfah-canary-v1> was reflected unencoded",
+            evidence="Canary probe <tracepoint-canary-v1> was reflected unencoded",
             screenshot=sample_screenshot,
         )
         res_dict = res.to_dict()
@@ -629,7 +629,7 @@ class TestAssessmentLogic(unittest.IsolatedAsyncioTestCase):
 
     async def test_actionable_manual_verify_coverage(self):
         """All non-observable Chapter V1 requirements must return actionable MANUAL_VERIFY with reasons and next actions."""
-        from tinyfah_loader import get_chapter_requirements
+        from tracepoint_loader import get_chapter_requirements
         v1_reqs = get_chapter_requirements("V1")
         self.assertEqual(len(v1_reqs), 30)
 

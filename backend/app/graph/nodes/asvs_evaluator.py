@@ -1,6 +1,6 @@
 from typing import Dict, Any, List
 from app.graph.state import AuditGraphState
-from app.loaders.tinyfah import load_tinyfah_data
+from app.loaders.tracepoint import load_tracepoint_data
 from app.services.scoring import calculate_score_and_grade
 
 CHAPTER_NAMES = {
@@ -71,9 +71,9 @@ async def asvs_standards_evaluator_node(state: AuditGraphState) -> Dict[str, Any
             if rid not in finding_map:
                 finding_map[rid] = f
 
-    # Load all standard ASVS requirements from Tinyfah.json
-    tinyfah_data = load_tinyfah_data()
-    all_requirements = tinyfah_data.get("requirements", [])
+    # Load all standard ASVS requirements from TracePoint.json
+    tracepoint_data = load_tracepoint_data()
+    all_requirements = tracepoint_data.get("requirements", [])
 
     final_asvs_results: List[Dict[str, Any]] = []
 

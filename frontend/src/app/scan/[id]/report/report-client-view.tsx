@@ -237,7 +237,7 @@ export function ReportClientView({ scanId }: ReportClientViewProps) {
 
       {/* Footer */}
       <footer className="py-6 text-center text-xs font-mono text-[#5d6b7b] border-t border-[#dfe5ec] bg-[#ffffff] print:hidden">
-        Tinyfah Autonomous Security Platform • Generated Report for {scan.url}
+        TracePoint Autonomous Security Platform • Generated Report for {scan.url}
       </footer>
     </div>
   );

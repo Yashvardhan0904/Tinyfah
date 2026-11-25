@@ -195,7 +195,7 @@ export function TechnicalReportClientView({ scanId }: TechnicalReportClientViewP
 
       {/* Footer */}
       <footer className="py-6 text-center text-xs font-mono text-[#5d6b7b] border-t border-[#dfe5ec] bg-[#ffffff] print:hidden">
-        Tinyfah Autonomous Security Platform • Technical Compliance Matrix for {scan.url}
+        TracePoint Autonomous Security Platform • Technical Compliance Matrix for {scan.url}
       </footer>
     </div>
   );

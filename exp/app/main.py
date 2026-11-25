@@ -28,7 +28,7 @@ from app.models.db import (
 )
 from app.services.recon import perform_recon
 
-app = FastAPI(title="Tinyfah Exploit", version="0.1.0")
+app = FastAPI(title="TracePoint Exploit", version="0.1.0")
 app.mount("/screenshots", StaticFiles(directory=SCREENSHOTS_DIR), name="screenshots")
 
 
@@ -83,7 +83,7 @@ def _llm_status() -> dict:
 @app.get("/")
 def root() -> dict:
     return {
-        "service": "tinyfah-exploit",
+        "service": "tracepoint-exploit",
         "version": app.version,
         "docs": "/docs",
         "health": "/health",
@@ -94,7 +94,7 @@ def root() -> dict:
 def health() -> dict:
     return {
         "status": "ok",
-        "service": "tinyfah-exploit",
+        "service": "tracepoint-exploit",
         "llm": _llm_status(),
         "tinyfish_configured": bool(TINYFISH_API_KEY),
         "allowed_hosts": list(ALLOWED_HOSTS),

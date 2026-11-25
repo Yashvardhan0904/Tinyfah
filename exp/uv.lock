@@ -1015,7 +1015,7 @@ wheels = [
 ]
 
 [[package]]
-name = "tinyfah-exploit"
+name = "tracepoint-exploit"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

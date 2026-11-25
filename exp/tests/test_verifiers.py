@@ -42,7 +42,7 @@ def test_exposed_artifact_missing_returns_none():
 
 
 def test_reflected_canary_unescaped_verified():
-    canary = "<tinyfah-canary-1>"
+    canary = "<tracepoint-canary-1>"
     inp = VerificationInput(
         action=_action("reflected_canary", "https://staging.example.com/?q=x"),
         response={"status": 200, "body_excerpt": f"<html><body>{canary}</body></html>"},
@@ -54,10 +54,10 @@ def test_reflected_canary_unescaped_verified():
 
 
 def test_reflected_canary_escaped_is_ignored():
-    canary = "<tinyfah-canary-1>"
+    canary = "<tracepoint-canary-1>"
     inp = VerificationInput(
         action=_action("reflected_canary", "https://staging.example.com/?q=x"),
-        response={"status": 200, "body_excerpt": "<html>&lt;tinyfah-canary-1&gt;</html>"},
+        response={"status": 200, "body_excerpt": "<html>&lt;tracepoint-canary-1&gt;</html>"},
         canary=canary,
     )
     assert verify_reflected_canary(inp) is None

@@ -6,7 +6,8 @@ from app.loaders.asvs import (
     get_first_n_tests,
     get_test_suite,
 )
-from app.loaders.tinyfah import (
+from app.loaders.tracepoint import (
+    load_tracepoint_data,
     load_tinyfah_data,
     get_input_legend,
     get_mode_legend,
@@ -21,6 +22,7 @@ __all__ = [
     "get_one_test_per_chapter",
     "get_first_n_tests",
     "get_test_suite",
+    "load_tracepoint_data",
     "load_tinyfah_data",
     "get_input_legend",
     "get_mode_legend",

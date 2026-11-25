@@ -317,7 +317,7 @@ async def input_encoding_node(state: AuditGraphState) -> Dict[str, Any]:
     if page:
         try:
             # 1. Probe HTML reflection (V1.2.1)
-            canary = "<tinyfah-canary-test>"
+            canary = "<tracepoint-canary-test>"
             probe_url = f"{target_url}{'&' if '?' in target_url else '?'}q={canary}&search={canary}"
             resp = await page.goto(probe_url, wait_until="domcontentloaded", timeout=12000)
             body_text = await page.content()
@@ -335,9 +335,9 @@ async def input_encoding_node(state: AuditGraphState) -> Dict[str, Any]:
                     "evidence": v1_2_1_evidence,
                     "remediation": "Apply contextual HTML entity encoding to dynamic variables.",
                 })
-            elif "&lt;tinyfah-canary-test&gt;" in body_text:
+            elif "&lt;tracepoint-canary-test&gt;" in body_text:
                 v1_2_1_status = "PASS"
-                v1_2_1_evidence = f"Canary probe was properly escaped as '&lt;tinyfah-canary-test&gt;'."
+                v1_2_1_evidence = f"Canary probe was properly escaped as '&lt;tracepoint-canary-test&gt;'."
 
             # 2. Probe Template Injection (V1.3.7)
             ssti_probe = "{{7*7}}"

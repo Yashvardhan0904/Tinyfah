@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Query
 from app.loaders.asvs import get_all_chapters, get_test_suite
-from app.loaders.tinyfah import get_chapter_requirements
+from app.loaders.tracepoint import get_chapter_requirements
 
 router = APIRouter(prefix="/asvs", tags=["ASVS"])
 

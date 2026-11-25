@@ -17,7 +17,7 @@ async def test_well_known_proof_verifies(monkeypatch):
     monkeypatch.setattr(ownership, "assert_public_resolution", _noop_resolution)
 
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/.well-known/tinyfah-secret-token.txt"
+        assert request.url.path == "/.well-known/tracepoint-secret-token.txt"
         return httpx.Response(200, text="secret-token")
 
     client = _client(handler)
@@ -43,7 +43,7 @@ async def test_meta_tag_proof_verifies(monkeypatch):
             return httpx.Response(404, text="missing")
         return httpx.Response(
             200,
-            text='<html><head><meta name="tinyfah-verify" content="secret-token"></head></html>',
+            text='<html><head><meta name="tracepoint-verify" content="secret-token"></head></html>',
         )
 
     client = _client(handler)
